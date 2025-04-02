@@ -5,7 +5,7 @@ import java.util.Observable;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @author Yang Junqi
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -93,7 +93,7 @@ public class Model extends Observable {
         checkGameOver();
         setChanged();
     }
-
+    public void colProcess
     /** Tilt the board toward SIDE. Return true iff this changes the board.
      *
      * 1. If two Tile objects are adjacent in the direction of motion and have
@@ -138,6 +138,18 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        // finish on Wed Apr 2
+        int size = b.size();
+        for (int i = 0; i < size; i++)
+        {
+            for (int j = 0; j < size; j++)
+            {
+                if (b.tile(i, j) == null)
+                {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -148,6 +160,22 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        // finish on Wed Apr 2
+        int size = b.size();
+        for (int i = 0; i < size; i++)
+        {
+            for (int j = 0; j < size; j++)
+            {
+                if (b.tile(i, j) == null)
+                {
+                    continue;
+                }
+                if (b.tile(i, j).value() == MAX_PIECE)
+                {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -157,8 +185,42 @@ public class Model extends Observable {
      * 1. There is at least one empty space on the board.
      * 2. There are two adjacent tiles with the same value.
      */
+    private static boolean hasSameValue(Board b, int x, int y)
+    {
+        int size = b.size();
+        int value = b.tile(x, y).value();
+        if (x > 0 && value == b.tile(x - 1, y).value()) {
+            return true;
+        }
+        if (x < size - 1 && value == b.tile(x + 1, y).value()) {
+            return true;
+        }
+        if (y > 0 && value == b.tile(x, y - 1).value()) {
+            return true;
+        }
+        return y < size - 1 && value == b.tile(x, y + 1).value();
+    }
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        //finish on Wed Apr 2
+        int size = b.size();
+        if (emptySpaceExists(b))
+        {
+            return true;
+        }
+        else
+        {
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    if (hasSameValue(b, i, j))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 

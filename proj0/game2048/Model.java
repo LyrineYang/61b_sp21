@@ -93,6 +93,31 @@ public class Model extends Observable {
         checkGameOver();
         setChanged();
     }
+
+    private boolean colProcessV2(int col)
+    {
+        boolean isChanged = false;
+        for (int y1 = board.size() - 1; y1 >= 1; y1--) {
+            Tile curTile = board.tile(col, y1);
+            Tile upperTile = null;
+            for (int y2 = y1 - 1; y2 >= 0 && upperTile == null; y2--) {
+                upperTile = board.tile(col, y2);
+            }
+            if (upperTile == null) {
+                break;
+            } else if (curTile == null) {
+                board.move(col, y1, upperTile);
+                y1++; // Restore
+                isChanged = true;
+            } else if (curTile.value() == upperTile.value()) {
+                board.move(col, y1, upperTile);
+                score += board.tile(col, y1).value();
+                isChanged = true;
+            }
+        }
+        return isChanged;
+    }
+
     private boolean colProcess(int col)
     {
         boolean ifChanged = false;
@@ -129,6 +154,7 @@ public class Model extends Observable {
         }
         return ifChanged;
     }
+
     /** Tilt the board toward SIDE. Return true iff this changes the board.
      *
      * 1. If two Tile objects are adjacent in the direction of motion and have
@@ -149,7 +175,7 @@ public class Model extends Observable {
         {
             for (int x = 0; x < board.size(); x++)
             {
-                if(colProcess(x))
+                if(colProcessV2(x))
                 {
                     changed = true;
                 }

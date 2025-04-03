@@ -93,7 +93,35 @@ public class Model extends Observable {
         checkGameOver();
         setChanged();
     }
-    public void colProcess
+    public void colProcess(int col)
+    {
+        int size = board.size();
+        int[] distances = new int[size];
+        for (int y = size - 1; y >=0; y--)
+        {
+            distances[y] = 0;
+            for (int ySide = y + 1; y < size; y++)
+            {
+                if (board.tile(col, ySide).value() == board.tile(col, y).value())
+                {
+                    distances[y]++;
+                }
+                if (board.tile(col, ySide) != null)
+                {
+                    break;
+                }
+                distances[y]++;
+            }
+        }
+        for (int y = size - 1; y >=0; y--)
+        {
+            Tile t = board.tile(col, y);
+            if (board.move(col, y + distances[y], t))
+            {
+                score += board.tile(col, y + distances[y]).value() * 2;
+            }
+        }
+    }
     /** Tilt the board toward SIDE. Return true iff this changes the board.
      *
      * 1. If two Tile objects are adjacent in the direction of motion and have
@@ -109,7 +137,10 @@ public class Model extends Observable {
     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
-
+        for (int x = 0; x < board.size(); x++)
+        {
+            colProcess(x);
+        }
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.

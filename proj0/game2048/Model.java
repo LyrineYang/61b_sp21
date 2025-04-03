@@ -93,32 +93,32 @@ public class Model extends Observable {
         checkGameOver();
         setChanged();
     }
-    public void colProcess(int col)
+    private void colProcess(int col)
     {
         int size = board.size();
-        int[] distances = new int[size];
-        for (int y = size - 1; y >=0; y--)
+        for (int y = size - 2; y >= 0; y--)
         {
-            distances[y] = 0;
-            for (int ySide = y + 1; y < size; y++)
+            int distance = 0;
+            if (board.tile(col, y) == null)
             {
-                if (board.tile(col, ySide).value() == board.tile(col, y).value())
-                {
-                    distances[y]++;
-                }
+                continue;
+            }
+            for (int ySide = y + 1; ySide < size; ySide++)
+            {
                 if (board.tile(col, ySide) != null)
                 {
+                    if (board.tile(col, ySide).value() == board.tile(col, y).value())
+                    {
+                        distance++;
+                    }
                     break;
                 }
-                distances[y]++;
+                distance++;
             }
-        }
-        for (int y = size - 1; y >=0; y--)
-        {
             Tile t = board.tile(col, y);
-            if (board.move(col, y + distances[y], t))
+            if (board.move(col, y + distance, board.tile(col, y)))
             {
-                score += board.tile(col, y + distances[y]).value() * 2;
+                score += board.tile(col, y + distance).value();
             }
         }
     }
@@ -137,10 +137,18 @@ public class Model extends Observable {
     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
-        for (int x = 0; x < board.size(); x++)
+        board.setViewingPerspective(side);
+        if (atLeastOneMoveExists(board))
         {
-            colProcess(x);
+            for (int x = 0; x < board.size(); x++)
+            {
+                colProcess(x);
+            }
+
+            board.setViewingPerspective(Side.NORTH);
+            changed = true;
         }
+
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.

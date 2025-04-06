@@ -12,7 +12,7 @@ import java.util.Random;
  */
 public class Board implements Iterable<Tile> {
     /** Current contents of the board. */
-    private Tile[][] values;
+    private Tile[][] values; // 设为final可防止public后数组直接被改变
     /** Side that the board currently views as north. */
     private Side viewPerspective;
 

@@ -67,4 +67,4 @@ public enum Side {
      *  start of this class. */
     private int row0, col0, drow, dcol;
 
-};
+}

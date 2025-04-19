@@ -120,9 +120,9 @@ public class Model extends Observable {
 
     private boolean colProcess(int col)
     {
-        boolean ifChanged = false;
+        boolean isChanged = false;
         int size = board.size();
-        boolean[][] is_merged = new boolean[size][size];
+        boolean[] isMerged = new boolean[size];
         for (int y = size - 2; y >= 0; y--)
         {
             int distance = 0;
@@ -134,7 +134,7 @@ public class Model extends Observable {
             {
                 if (board.tile(col, ySide) != null)
                 {
-                    if (board.tile(col, ySide).value() == board.tile(col, y).value() && !is_merged[col][y + distance + 1])
+                    if (board.tile(col, ySide).value() == board.tile(col, y).value() && !isMerged[y + distance + 1])
                     {
                         distance++;
                     }
@@ -144,15 +144,15 @@ public class Model extends Observable {
             }
             if (board.move(col, y + distance, board.tile(col, y)))
             {
-                is_merged[col][y + distance] = true;
+                isMerged[y + distance] = true;
                 score += board.tile(col, y + distance).value();
             }
             if (distance > 0)
             {
-                ifChanged =true;
+                isChanged =true;
             }
         }
-        return ifChanged;
+        return isChanged;
     }
 
     /** Tilt the board toward SIDE. Return true iff this changes the board.
@@ -171,9 +171,10 @@ public class Model extends Observable {
         boolean changed;
         changed = false;
         board.setViewingPerspective(side);
+        int size = board.size();
         if (atLeastOneMoveExists(board))
         {
-            for (int x = 0; x < board.size(); x++)
+            for (int x = 0; x < size; x++)
             {
                 if(colProcessV2(x))
                 {
@@ -184,7 +185,7 @@ public class Model extends Observable {
             board.setViewingPerspective(Side.NORTH);
         }
         // TODO: Modify this.board (and perhaps this.score) to account
-        //finished on Thu Apr 3, proj 0 completed!
+        // finished on Thu Apr 3, proj 0 completed!
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 

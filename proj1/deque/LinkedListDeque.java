@@ -1,15 +1,23 @@
 package deque;
 
+/* key in LinkedListDeque: view sentinel and every node as node but not kind of tree or list!
+* @author Lyrine Yang
+* The invariants:
+* sentinel Node, first which is sentinel Node's next, the last which is sentinel Node's prev
+* */
+
 public class LinkedListDeque<T> {
     private int size;
     /* Declaration of sentinel node */
     private Node sentinel;
+
+    /** create data structure based on nested class Node */
     private class Node {
         private T item;
         private Node next;
         private Node prev;
 
-        /** Create data structure Node */
+        /** Create Node include prev and next */
         public Node (T i, Node n, Node p) {
             item = i;
             next = n;

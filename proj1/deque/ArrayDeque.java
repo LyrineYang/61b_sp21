@@ -14,7 +14,7 @@ public class ArrayDeque<Item> {
         return (nextFirst + 1) % items.length;
     }
     private int getLastIndex () {
-        return (nextLast - 1) % items.length;
+        return (nextLast - 1 + items.length) % items.length;
     }
     private void reSize(int cap) {
         int firstIndex = getFirstIndex();
@@ -94,6 +94,9 @@ public class ArrayDeque<Item> {
         return last;
     }
     public Item get(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
         int firstIndex = getFirstIndex();
         return items[(firstIndex + index) % items.length];
     }

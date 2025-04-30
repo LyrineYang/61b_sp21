@@ -1,6 +1,6 @@
 package deque;
 
-public class ArrayDeque<Item> {
+public class ArrayDeque<Item> implements Deque<Item>{
     private int size;
     private Item[] items;
     private int nextFirst, nextLast;
@@ -29,9 +29,11 @@ public class ArrayDeque<Item> {
         nextLast = size;
         nextFirst = items.length - 1;
     }
+    @Override
     public int size() {
         return size;
     }
+    @Override
     public void addFirst(Item item) {
         if (size == items.length) {
             reSize(2 * size);
@@ -40,6 +42,7 @@ public class ArrayDeque<Item> {
         nextFirst = (nextFirst - 1 + items.length) % items.length;
         size += 1;
     }
+    @Override
     public void addLast(Item item) {
         if (size == items.length) {
             reSize(2 * size);
@@ -48,9 +51,7 @@ public class ArrayDeque<Item> {
         nextLast = (nextLast + 1) % items.length;
         size += 1;
     }
-    public boolean isEmpty() {
-        return size == 0;
-    }
+    @Override
     public void printDeque() {
         int firstIndex = getFirstIndex();
         int lastIndex = getLastIndex();
@@ -69,6 +70,7 @@ public class ArrayDeque<Item> {
             System.out.println();
         }
     }
+    @Override
     public Item removeFirst() {
         if (isEmpty()) {
             return null;
@@ -81,6 +83,7 @@ public class ArrayDeque<Item> {
         checkUsageFactor();
         return first;
     }
+    @Override
     public Item removeLast() {
         if (isEmpty()) {
             return null;
@@ -93,6 +96,7 @@ public class ArrayDeque<Item> {
         checkUsageFactor();
         return last;
     }
+    @Override
     public Item get(int index) {
         if (index < 0 || index >= size) {
             throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);

@@ -75,6 +75,8 @@ public class ArrayDeque<Item> {
         }
         items[firstIndex] = null;
         nextFirst = firstIndex;
+        size -= 1;
+        checkUsageFactor();
         return first;
     }
     public Item removeLast() {
@@ -84,9 +86,17 @@ public class ArrayDeque<Item> {
         }
         items[nextLast - 1] = null;
         nextLast -= 1;
+        size -= 1;
+        checkUsageFactor();
         return last;
     }
     public Item get(int index) {
         return items[(firstIndex + index) % items.length];
+    }
+    private void checkUsageFactor() {
+        double usageFactor = (double) size / items.length;
+        if (usageFactor < 0.25 && size >= 16) {
+            reSize(items.length / 2);
+        }
     }
 }

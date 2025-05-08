@@ -1,6 +1,8 @@
 package deque;
-
-public class ArrayDeque<Item> implements Deque<Item>{
+/*View array as current data strcture to archive first and last pointer
+* @author Lyrine Yang
+* */
+public class ArrayDeque<Item> implements Deque<Item> {
     private int size;
     private Item[] items;
     private int nextFirst, nextLast;

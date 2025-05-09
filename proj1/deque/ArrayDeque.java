@@ -1,26 +1,53 @@
 package deque;
+
+import java.util.Iterator;
+
 /*View array as current data strcture to archive first and last pointer
 * @author Lyrine Yang
 * */
-public class ArrayDeque<Item> implements Deque<Item> {
+public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private int size;
-    private Item[] items;
+    private T[] items;
     private int nextFirst, nextLast;
     public ArrayDeque() {
-        items = (Item[]) new Object[8];
+        items = (T[]) new Object[8];
         size = 0;
         nextFirst = 0;
         nextLast = 1;
     }
-    private int getFirstIndex () {
+    /** returns an iterator for arrayDeque! */
+    @Override
+    public Iterator<T> iterator() {
+        return new ArrayDequeIterator();
+    }
+    private class ArrayDequeIterator implements Iterator<T> {
+        private int position;
+        public ArrayDequeIterator() {
+            position = 0; // 迭代从逻辑上的第一个元素开始
+        }
+        @Override
+        public boolean hasNext() {
+            return position < size();
+        }
+        @Override
+        public T next() {
+            if (!hasNext()) {
+                return null;
+            }
+            T item = get(position);
+            position += 1;
+            return item;
+        }
+    }
+    private int getFirstIndex() {
         return (nextFirst + 1) % items.length;
     }
-    private int getLastIndex () {
+    private int getLastIndex() {
         return (nextLast - 1 + items.length) % items.length;
     }
     private void reSize(int cap) {
         int firstIndex = getFirstIndex();
-        Item[] t = (Item[]) new Object[cap];
+        T[] t = (T[]) new Object[cap];
         if (getFirstIndex() < nextLast) {
             System.arraycopy(items, firstIndex, t, 0, size);
         } else {
@@ -36,7 +63,7 @@ public class ArrayDeque<Item> implements Deque<Item> {
         return size;
     }
     @Override
-    public void addFirst(Item item) {
+    public void addFirst(T item) {
         if (size == items.length) {
             reSize(2 * size);
         }
@@ -45,7 +72,7 @@ public class ArrayDeque<Item> implements Deque<Item> {
         size += 1;
     }
     @Override
-    public void addLast(Item item) {
+    public void addLast(T item) {
         if (size == items.length) {
             reSize(2 * size);
         }
@@ -73,12 +100,12 @@ public class ArrayDeque<Item> implements Deque<Item> {
         }
     }
     @Override
-    public Item removeFirst() {
+    public T removeFirst() {
         if (isEmpty()) {
             return null;
         }
         int firstIndex = getFirstIndex();
-        Item first = items[firstIndex];
+        T first = items[firstIndex];
         items[firstIndex] = null;
         nextFirst = firstIndex;
         size -= 1;
@@ -86,12 +113,12 @@ public class ArrayDeque<Item> implements Deque<Item> {
         return first;
     }
     @Override
-    public Item removeLast() {
+    public T removeLast() {
         if (isEmpty()) {
             return null;
         }
         int lastIndex = getLastIndex();
-        Item last = items[lastIndex];
+        T last = items[lastIndex];
         items[lastIndex] = null;
         nextLast = lastIndex;
         size -= 1;
@@ -99,7 +126,7 @@ public class ArrayDeque<Item> implements Deque<Item> {
         return last;
     }
     @Override
-    public Item get(int index) {
+    public T get(int index) {
         if (index < 0 || index >= size) {
             throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
         }

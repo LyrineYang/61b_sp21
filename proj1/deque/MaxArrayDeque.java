@@ -2,30 +2,33 @@ package deque;
 
 import java.util.Comparator;
 
-public class MaxArrayDeque<Item> extends ArrayDeque<Item>{
-    private Comparator<Item> elementComparator;
-    public MaxArrayDeque(Comparator<Item> c) {
+public class MaxArrayDeque<T> extends ArrayDeque<T> {
+    private Comparator<T> itemComparator;
+    public MaxArrayDeque(Comparator<T> c) {
         super();
-        elementComparator = c;
+        if (c == null) {
+            return;
+        }
+        itemComparator = c;
     }
-    public Item max() {
-        if (size() == 0 || elementComparator == null) {
+    public T max() {
+        if (isEmpty()) {
             return null;
         }
-        Item max = get(0);
-        for (int i = 0; i < size(); i++) {
-            if (elementComparator.compare(get(i), max) > 0) {
+        T max = get(0);
+        for (int i = 1; i < size(); i++) {
+            if (itemComparator.compare(get(i), max) > 0) {
                 max = get(i);
             }
         }
         return max;
     }
-    public Item max(Comparator<Item> c) {
-        if (size() == 0) {
+    public T max(Comparator<T> c) {
+        if (isEmpty()) {
             return null;
         }
-        Item max = get(0);
-        for (int i = 0; i < size(); i++) {
+        T max = get(0);
+        for (int i = 1; i < size(); i++) {
             if (c.compare(get(i), max) > 0) {
                 max = get(i);
             }

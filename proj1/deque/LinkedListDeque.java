@@ -1,16 +1,40 @@
 package deque;
-
 /* key in LinkedListDeque: view sentinel and every node as node but not kind of tree or list!
 * @author Lyrine Yang
 * The invariants:
 * sentinel Node, first which is sentinel Node's next, the last which is sentinel Node's prev
 * */
 
-public class LinkedListDeque<Item> implements Deque<Item>{
+import java.util.Iterator;
+
+public class LinkedListDeque<Item> implements Deque<Item>, Iterable<Item> {
     private int size;
     /* Declaration of sentinel node */
     private Node sentinel;
+    @Override
+    public Iterator<Item> iterator() {
+        return new LinkedListDequeIterator();
+    }
+    private class LinkedListDequeIterator implements Iterator<Item> {
+        private Node currentNode;
+        public LinkedListDequeIterator() {
+            currentNode = sentinel.next;
+        }
 
+        @Override
+        public boolean hasNext() {
+            return currentNode != sentinel;
+        }
+        @Override
+        public Item next() {
+            if(!hasNext()) {
+                return null;
+            }
+            Item currentItem = currentNode.item;
+            currentNode = currentNode.next;
+            return currentItem;
+        }
+    }
     /** create data structure based on nested class Node */
     private class Node {
         private Item item;
@@ -18,7 +42,7 @@ public class LinkedListDeque<Item> implements Deque<Item>{
         private Node prev;
 
         /** Create Node include prev and next */
-        public Node (Item i, Node n, Node p) {
+        public Node(Item i, Node n, Node p) {
             item = i;
             next = n;
             prev = p;
@@ -65,7 +89,6 @@ public class LinkedListDeque<Item> implements Deque<Item>{
         }
             System.out.println();
     }
-
     /** Remove the node next to sentinel node */
     @Override
     public Item removeFirst() {
@@ -98,7 +121,7 @@ public class LinkedListDeque<Item> implements Deque<Item>{
     @Override
     public Item get(int index) {
         Node p = sentinel.next;
-        if(index >= size || index < 0) {
+        if (index >= size || index < 0) {
             return null;
         }
         while (index != 0) {

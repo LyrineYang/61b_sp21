@@ -41,5 +41,4 @@ public interface Deque<Item> {
      */
     public Item get(int index);
 
- 
 }

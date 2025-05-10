@@ -37,23 +37,38 @@ public class LinkedListDeque<Item> implements Deque<Item>, Iterable<Item> {
             return currentItem;
         }
     }
+
+// 在 LinkedListDeque.java 文件中
+
+// ... 其他代码保持不变 ...
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        if (o instanceof LinkedListDeque otherDeque) {
-            if (size() != otherDeque.size()) {
-                return false;
-            }
-            for (int i = 0; i < size(); i += 1) {
-                if (this.get(i) != otherDeque.get(i)) {
+        if (!(o instanceof LinkedListDeque)) {
+            return false;
+        }
+        LinkedListDeque<?> otherDeque = (LinkedListDeque<?>) o;
+
+        if (this.size() != otherDeque.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < size(); i += 1) {
+            Object thisItem = this.get(i);
+            Object otherItem = otherDeque.get(i);
+
+            if (thisItem == null) {
+                if (otherItem != null) {
                     return false;
                 }
+            } else if (!thisItem.equals(otherItem)) {
+                return false;
             }
-            return true;
         }
-        return false;
+
+        return true;
     }
     /** create data structure based on nested class Node */
     private class Node {

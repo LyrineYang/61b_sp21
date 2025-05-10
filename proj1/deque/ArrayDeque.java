@@ -16,23 +16,31 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
         nextLast = 1;
     }
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o instanceof ArrayDeque otherDeque) {
-            if (this.size() != otherDeque.size()) {
-                return false;
-            }
-            for(int i = 0; i < size(); i += 1) {
-                if (get(i) != otherDeque.get(i)) {
-                    return false;
-                }
-            }
-            return true;
-        }
+public boolean equals(Object o) {
+    if (this == o) {
+        return true;
+    }
+    if (!(o instanceof ArrayDeque)) { // 先检查 null 和类型
         return false;
     }
+    ArrayDeque<?> otherDeque = (ArrayDeque<?>) o; // 类型转换
+
+    if (this.size() != otherDeque.size()) {
+        return false;
+    }
+    for (int i = 0; i < size(); i += 1) {
+        Object thisItem = this.get(i);
+        Object otherItem = otherDeque.get(i);
+        if (thisItem == null) {
+            if (otherItem != null) {
+                return false;
+            }
+        } else if (!thisItem.equals(otherItem)) {
+            return false;
+        }
+    }
+    return true;
+}
     /** returns an iterator for arrayDeque */
     @Override
     public Iterator<T> iterator() {

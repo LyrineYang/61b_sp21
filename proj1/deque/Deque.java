@@ -2,6 +2,7 @@ package deque;
 
 //can not be instantiated because it is an interface
 public interface Deque<Item> {
+
     public void addFirst(Item item);
 
     /**

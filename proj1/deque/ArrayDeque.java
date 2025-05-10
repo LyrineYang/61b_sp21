@@ -15,6 +15,24 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
         nextFirst = 0;
         nextLast = 1;
     }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o instanceof ArrayDeque otherDeque) {
+            if (this.size() != otherDeque.size()) {
+                return false;
+            }
+            for(int i = 0; i < size(); i += 1) {
+                if (get(i) != otherDeque.get(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
     /** returns an iterator for arrayDeque */
     @Override
     public Iterator<T> iterator() {

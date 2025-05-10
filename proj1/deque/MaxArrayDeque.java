@@ -11,6 +11,12 @@ public class MaxArrayDeque<T> extends ArrayDeque<T> {
         }
         itemComparator = c;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
     public T max() {
         if (isEmpty()) {
             return null;

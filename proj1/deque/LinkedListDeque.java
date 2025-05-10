@@ -6,7 +6,7 @@ package deque;
 * */
 
 import java.util.Iterator;
-/** iterable data structure, is a Deque */
+/** iterable data structure, and it is a Deque */
 public class LinkedListDeque<Item> implements Deque<Item>, Iterable<Item> {
     private int size;
     /* Declaration of sentinel node */
@@ -37,7 +37,24 @@ public class LinkedListDeque<Item> implements Deque<Item>, Iterable<Item> {
             return currentItem;
         }
     }
-
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o instanceof LinkedListDeque otherDeque) {
+            if (size() != otherDeque.size()) {
+                return false;
+            }
+            for (int i = 0; i < size(); i += 1) {
+                if (this.get(i) != otherDeque.get(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
     /** create data structure based on nested class Node */
     private class Node {
         private Item item;

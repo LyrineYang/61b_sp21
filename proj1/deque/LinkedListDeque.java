@@ -6,21 +6,23 @@ package deque;
 * */
 
 import java.util.Iterator;
-
+/** iterable data structure, is a Deque */
 public class LinkedListDeque<Item> implements Deque<Item>, Iterable<Item> {
     private int size;
     /* Declaration of sentinel node */
     private Node sentinel;
+
+    /** to return a iterator for LinkedListDeque */
     @Override
     public Iterator<Item> iterator() {
         return new LinkedListDequeIterator();
     }
+    /** nested class to build up LinkedListDeque iterator */
     private class LinkedListDequeIterator implements Iterator<Item> {
         private Node currentNode;
         public LinkedListDequeIterator() {
             currentNode = sentinel.next;
         }
-
         @Override
         public boolean hasNext() {
             return currentNode != sentinel;
@@ -35,6 +37,7 @@ public class LinkedListDeque<Item> implements Deque<Item>, Iterable<Item> {
             return currentItem;
         }
     }
+
     /** create data structure based on nested class Node */
     private class Node {
         private Item item;
@@ -60,16 +63,18 @@ public class LinkedListDeque<Item> implements Deque<Item>, Iterable<Item> {
     /** Add first item behind sentinel node */
     @Override
     public void addFirst(Item item) {
-        sentinel.next = new Node(item, sentinel.next, sentinel);
-        sentinel.next.next.prev = sentinel.next;
+        Node newNode = new Node(item, sentinel.next, sentinel);
+        sentinel.next.prev = newNode;
+        sentinel.next = newNode;
         size += 1;
     }
 
     /** Add last item before sentinel node */
     @Override
     public void addLast(Item item) {
-        sentinel.prev = new Node(item, sentinel, sentinel.prev);
-        sentinel.prev.prev.next = sentinel.prev;
+        Node newNode = new Node(item, sentinel, sentinel.prev);
+        sentinel.prev.next = newNode;
+        sentinel.prev = newNode;
         size += 1;
     }
 
@@ -82,10 +87,8 @@ public class LinkedListDeque<Item> implements Deque<Item>, Iterable<Item> {
     /** Print whole Deque for one loop */
     @Override
     public void printDeque() {
-        Node p = sentinel;
-        for (int i = 0; i < this.size; i++) {
-            System.out.print(p.next.item + " ");
-            p = p.next;
+        for (Item i : this) {
+            System.out.print(i + " ");
         }
             System.out.println();
     }

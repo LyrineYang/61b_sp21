@@ -37,7 +37,7 @@ public interface Deque<Item> {
     public Item removeLast();
 
     /**
-     * Iteration method to get index node
+     * method to get No.Index node
      */
     public Item get(int index);
 

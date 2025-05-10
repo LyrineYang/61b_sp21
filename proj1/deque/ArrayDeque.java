@@ -15,7 +15,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
         nextFirst = 0;
         nextLast = 1;
     }
-    /** returns an iterator for arrayDeque! */
+    /** returns an iterator for arrayDeque */
     @Override
     public Iterator<T> iterator() {
         return new ArrayDequeIterator();
@@ -82,22 +82,10 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     }
     @Override
     public void printDeque() {
-        int firstIndex = getFirstIndex();
-        int lastIndex = getLastIndex();
-        if (firstIndex < lastIndex) {
-            for (int i = firstIndex; i <= lastIndex; i++) {
-                System.out.print(items[i] + " ");
-            }
-            System.out.println();
-        } else {
-            for (int i = firstIndex; i < items.length; i++) {
-                System.out.print(items[i] + " ");
-            }
-            for (int i = 0; i <= lastIndex; i++) {
-                System.out.print(items[i] + " ");
-            }
-            System.out.println();
+        for (T i : this) {
+            System.out.print(i + " ");
         }
+        System.out.println();
     }
     @Override
     public T removeFirst() {

@@ -47,8 +47,8 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     }
     private class ArrayDequeIterator implements Iterator<T> {
         private int position;
-        public ArrayDequeIterator() {
-            position = 0; // 迭代从逻辑上的第一个元素开始
+        private ArrayDequeIterator() {
+            position = 0;
         }
         @Override
         public boolean hasNext() {

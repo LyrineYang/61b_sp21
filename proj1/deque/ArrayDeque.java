@@ -16,31 +16,30 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
         nextLast = 1;
     }
     @Override
-public boolean equals(Object o) {
-    if (this == o) {
-        return true;
-    }
-    if (!(o instanceof ArrayDeque)) { // 先检查 null 和类型
-        return false;
-    }
-    ArrayDeque<?> otherDeque = (ArrayDeque<?>) o; // 类型转换
-
-    if (this.size() != otherDeque.size()) {
-        return false;
-    }
-    for (int i = 0; i < size(); i += 1) {
-        Object thisItem = this.get(i);
-        Object otherItem = otherDeque.get(i);
-        if (thisItem == null) {
-            if (otherItem != null) {
-                return false;
-            }
-        } else if (!thisItem.equals(otherItem)) {
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Deque)) {
             return false;
         }
+        Deque<?> otherDeque = (Deque<?>) o;
+        if (this.size() != otherDeque.size()) {
+            return false;
+        }
+        for (int i = 0; i < size(); i += 1) {
+            Object thisItem = this.get(i);
+            Object otherItem = otherDeque.get(i);
+            if (thisItem == null) {
+                if (otherItem != null) {
+                    return false;
+                }
+            } else if (!thisItem.equals(otherItem)) {
+                return false;
+            }
+        }
+        return true;
     }
-    return true;
-}
     /** returns an iterator for arrayDeque */
     @Override
     public Iterator<T> iterator() {
@@ -147,9 +146,10 @@ public boolean equals(Object o) {
         int firstIndex = getFirstIndex();
         return items[(firstIndex + index) % items.length];
     }
+    private static final int MIN_RESIZE_LENGTH = 16;
     private void checkUsageFactor() {
         double usageFactor = (double) size / items.length;
-        if (usageFactor < 0.25 && items.length >= 16) {
+        if (usageFactor < 0.25 && items.length >= MIN_RESIZE_LENGTH) {
             reSize(items.length / 2);
         }
     }

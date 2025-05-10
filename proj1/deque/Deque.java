@@ -1,14 +1,14 @@
 package deque;
 
 //can not be instantiated because it is an interface
-public interface Deque<Item> {
+public interface Deque<T> {
 
-    public void addFirst(Item item);
+    void addFirst(T item);
 
     /**
      * Add last item before sentinel node
      */
-    public void addLast(Item item);
+    void addLast(T item);
 
     /**
      * Return if size equals to zero
@@ -20,26 +20,26 @@ public interface Deque<Item> {
     /**
      * Return the int size of the deque
      */
-    public int size();
+    int size();
 
     /**
      * Print whole Deque for one loop
      */
-    public void printDeque();
+    void printDeque();
 
     /**
      * Remove the node next to sentinel node
      */
-    public Item removeFirst();
+    T removeFirst();
 
     /**
      * Remove the node previous to sentinel node
      */
-    public Item removeLast();
+    T removeLast();
 
     /**
      * method to get No.Index node
      */
-    public Item get(int index);
+    T get(int index);
 
 }

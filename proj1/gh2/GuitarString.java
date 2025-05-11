@@ -32,12 +32,7 @@ public class GuitarString {
             double r = Math.random() - 0.5;
             buffer.addLast(r);
         }
-        //       Make sure that your random numbers are different from each
-        //       other. This does not mean that you need to check that the numbers
-        //       are different from each other. It means you should repeatedly call
-        //       Math.random() - 0.5 to generate new random numbers for each array index.
     }
-
     /* Advance the simulation one time step by performing one iteration of
      * the Karplus-Strong algorithm.
      */

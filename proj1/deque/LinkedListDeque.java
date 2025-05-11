@@ -10,7 +10,7 @@ import java.util.Iterator;
 public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     private int size;
     /* Declaration of sentinel node */
-    private Node sentinel;
+    private final Node sentinel;
 
     /** to return a iterator for LinkedListDeque */
     @Override
@@ -37,39 +37,27 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
             return currentItem;
         }
     }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Deque)) {
-            return false;
-        }
-        Deque<?> otherDeque = (Deque<?>) o;
-
-        if (this.size() != otherDeque.size()) {
-            return false;
-        }
-
-        for (int i = 0; i < size(); i += 1) {
-            Object thisItem = this.get(i);
-            Object otherItem = otherDeque.get(i);
-
-            if (thisItem == null) {
-                if (otherItem != null) {
-                    return false;
-                }
-            } else if (!thisItem.equals(otherItem)) {
+        if (o instanceof Deque<?> otherDeque) {
+            if (size() != otherDeque.size()) {
                 return false;
             }
+            for (int i = 0; i < size(); i += 1) {
+                if (!this.get(i).equals(otherDeque.get(i))) {
+                    return false;
+                }
+            }
+            return true;
         }
-
-        return true;
+        return false;
     }
     /** create data structure based on nested class Node */
     private class Node {
-        private T item;
+        private final T item;
         private Node next;
         private Node prev;
 

@@ -20,25 +20,18 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Deque)) {
-            return false;
-        }
-        Deque<?> otherDeque = (Deque<?>) o;
-        if (this.size() != otherDeque.size()) {
-            return false;
-        }
-        for (int i = 0; i < size(); i += 1) {
-            Object thisItem = this.get(i);
-            Object otherItem = otherDeque.get(i);
-            if (thisItem == null) {
-                if (otherItem != null) {
-                    return false;
-                }
-            } else if (!thisItem.equals(otherItem)) {
+        if (o instanceof Deque<?> otherDeque) {
+            if (size() != otherDeque.size()) {
                 return false;
             }
+            for (int i = 0; i < size(); i += 1) {
+                if (!this.get(i).equals(otherDeque.get(i))) {
+                    return false;
+                }
+            }
+            return true;
         }
-        return true;
+        return false;
     }
     /** returns an iterator for arrayDeque */
     @Override
@@ -72,14 +65,14 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     }
     private void reSize(int cap) {
         int firstIndex = getFirstIndex();
-        T[] t = (T[]) new Object[cap];
+        T[] newArray = (T[]) new Object[cap];
         if (getFirstIndex() < nextLast) {
-            System.arraycopy(items, firstIndex, t, 0, size);
+            System.arraycopy(items, firstIndex, newArray, 0, size);
         } else {
-            System.arraycopy(items, firstIndex, t, 0, items.length - firstIndex);
-            System.arraycopy(items, 0, t, items.length - firstIndex, nextLast);
+            System.arraycopy(items, firstIndex, newArray, 0, items.length - firstIndex);
+            System.arraycopy(items, 0, newArray, items.length - firstIndex, nextLast);
         }
-        items = t;
+        items = newArray;
         nextLast = size;
         nextFirst = items.length - 1;
     }

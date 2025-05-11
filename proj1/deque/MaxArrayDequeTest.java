@@ -2,11 +2,9 @@ package deque;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
-
 import java.util.Comparator;
-
+/* @author Google Gemini 2.5 pro */
 public class MaxArrayDequeTest {
-
     /**
      * 测试整数类型的 MaxArrayDeque，使用自然顺序比较器 (Integer::compare)
      */

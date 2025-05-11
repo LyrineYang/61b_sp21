@@ -14,7 +14,7 @@ public class SLList<Item> {
 	}
 
 	/* The first item (if it exists) is at sentinel.next. */
-	private IntNode sentinel;
+	private final IntNode sentinel;
 	private int size;
 
 	/** Creates an empty timingtest.SLList. */

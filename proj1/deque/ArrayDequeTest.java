@@ -1,10 +1,10 @@
-package deque; // 确保这个包名和你的 ArrayDeque 类所在的包匹配
-
+package deque;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
  * Performs some basic array deque tests.
+ * @author Google Gemini 2.5 pro
  */
 public class ArrayDequeTest {
 

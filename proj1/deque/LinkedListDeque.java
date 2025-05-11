@@ -1,5 +1,5 @@
 package deque;
-/* key in LinkedListDeque: view sentinel and every node as node but not kind of tree or list!
+/** key in LinkedListDeque: view sentinel and every node as node but not kind of tree or list!
 * @author Lyrine Yang
 * The invariants:
 * sentinel Node, first which is sentinel Node's next, the last which is sentinel Node's prev

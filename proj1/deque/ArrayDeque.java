@@ -2,9 +2,10 @@ package deque;
 
 import java.util.Iterator;
 
-/*View array as current data strcture to archive first and last pointer
+/** View array as current data strcture to archive first and last pointer
 * @author Lyrine Yang
 * */
+
 public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private int size;
     private T[] items;

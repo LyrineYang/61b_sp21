@@ -1,6 +1,8 @@
 package deque;
 
-//can not be instantiated because it is an interface
+/** can not be instantiated because it is an interface
+@author Lyrine Yang
+ */
 public interface Deque<T> {
 
     void addFirst(T item);

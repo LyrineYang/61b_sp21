@@ -158,7 +158,6 @@ public class Model extends Observable {
 
             board.setViewingPerspective(Side.NORTH);
         }
-        // TODO: Modify this.board (and perhaps this.score) to account
         // finished on Thu Apr 3, proj 0 completed!
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
@@ -186,7 +185,6 @@ public class Model extends Observable {
      *  Empty spaces are stored as null.
      * */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
         // finish on Wed Apr 2
         int size = b.size();
         for (int i = 0; i < size; i++)
@@ -208,7 +206,6 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
         // finish on Wed Apr 2
         int size = b.size();
         for (int i = 0; i < size; i++)
@@ -250,7 +247,6 @@ public class Model extends Observable {
         return y < size - 1 && value == b.tile(x, y + 1).value();
     }
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
         //finish on Wed Apr 2
         int size = b.size();
         if (emptySpaceExists(b))

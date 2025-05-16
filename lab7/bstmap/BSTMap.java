@@ -29,7 +29,19 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
     @Override
     public boolean containsKey(K key) {
-        return getHelper(key, root) != null;
+        return containsKeyHelper(key, root);
+    }
+    private boolean containsKeyHelper(K key, BSTNode currentNode) {
+        if (currentNode == null || key == null) {
+            return false;
+        }
+        if (key.compareTo(currentNode.key) == 0) {
+            return true;
+        } else if (key.compareTo(currentNode.key) < 0) {
+            return containsKeyHelper(key, currentNode.left);
+        } else {
+            return containsKeyHelper(key, currentNode.right);
+        }
     }
 
     @Override
@@ -37,7 +49,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         return getHelper(key, root);
     }
     private V getHelper(K key, BSTNode currentNode) {
-        if (currentNode == null) {
+        if (currentNode == null || key == null) {
             return null;
         }
         if (key.compareTo(currentNode.key) == 0) {
@@ -98,20 +110,18 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
             return null;
         }
         if (key.compareTo(currentNode.key) == 0) {
-            if (currentNode.left == null && currentNode.right == null) {
-                return null;
-            } else if (currentNode.left != null && currentNode.right != null) {
-                BSTNode maxLeftNode = getMaxNode(currentNode.left);
-                currentNode.value = maxLeftNode.value;
-                currentNode.key = maxLeftNode.key;
-                currentNode.left = removeHelper(maxLeftNode.key, currentNode.left);
-                currentNode.size = 1 + nodeSize(currentNode.left) + nodeSize(currentNode.right);
-                return currentNode;
-            } else if (currentNode.left != null) {
-                return currentNode.left;
-            } else {
+            if (currentNode.left == null) {
                 return currentNode.right;
             }
+            if (currentNode.right == null) {
+                return currentNode.left;
+            }
+            BSTNode predecessorNode = getMaxNode(currentNode.left);
+            currentNode.key = predecessorNode.key;
+            currentNode.value = predecessorNode.value;
+            currentNode.left = removeHelper(predecessorNode.key, currentNode.left);
+            currentNode.size = 1 + nodeSize(currentNode.left) + nodeSize(currentNode.right);
+            return currentNode;
         } else if (key.compareTo(currentNode.key) < 0) {
             currentNode.left = removeHelper(key, currentNode.left);
             currentNode.size = 1 + nodeSize(currentNode.left) + nodeSize(currentNode.right);

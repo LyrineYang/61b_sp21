@@ -139,6 +139,17 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         }
         return p;
     }
+    public void printInOrder() {
+        printInOrderHelper(root);
+    }
+    private void printInOrderHelper(BSTNode currentNode) {
+        if (currentNode == null) {
+            return;
+        }
+        printInOrderHelper(currentNode.left);
+        System.out.println(currentNode.key);
+        printInOrderHelper(currentNode.right);
+    }
 
     @Override
     public V remove(K key, V value) {

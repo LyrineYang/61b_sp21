@@ -3,7 +3,7 @@ package UnionFindSet;
 /**
  * @author Lyrine Yang
  */
-public class UnionFind {
+public class UnionFind implements UnionFindSet{
     private final int[] parents;
     private final int totalSize;
 
@@ -44,9 +44,9 @@ public class UnionFind {
         if (parent(v) < 0) {
             return v;
         }
-        int root = find(parent(v));
-        parents[v] = root;
-        return parents[v];
+        int ultimateRoot = find(parent(v));
+        parents[v] = ultimateRoot;
+        return ultimateRoot;
     }
 
     /* Connects two items V1 and V2 together by connecting their respective

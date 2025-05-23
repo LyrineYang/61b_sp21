@@ -34,8 +34,21 @@ public class CapersRepository {
      */
     public static void setupPersistence() {
         // TODO
-        Utils.join(".capers", "dogs");
-        Utils.join(".capers", "story");
+        if (!CAPERS_FOLDER.exists()) {
+            CAPERS_FOLDER.mkdir(); // 创建 .capers 目录
+        }
+        File dogsFolder = Utils.join(CAPERS_FOLDER, "dogs");
+        if (!dogsFolder.exists()) {
+            dogsFolder.mkdir(); // 创建 dogs 目录
+        }
+        File storyFile = Utils.join(CAPERS_FOLDER, "story");
+        try {
+            if (!storyFile.exists()) {
+                storyFile.createNewFile(); // 创建 story 文件
+            }
+        } catch (IOException excp) {
+            throw new RuntimeException(excp);
+        }
     }
 
     /**

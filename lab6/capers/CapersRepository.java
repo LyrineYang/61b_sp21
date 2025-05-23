@@ -34,8 +34,8 @@ public class CapersRepository {
      */
     public static void setupPersistence() {
         // TODO
-        CAPERS_FOLDER.mkdir();
-        Utils.join(CAPERS_FOLDER, "dogs");
+        Utils.join(".capers", "dogs");
+        Utils.join(".capers", "story");
     }
 
     /**
@@ -45,10 +45,11 @@ public class CapersRepository {
      */
     public static void writeStory(String text) {
         // TODO
+
         File story = Utils.join(CAPERS_FOLDER, "story");
-        writeContents(story, text, "\n");
-        String nowStory = Utils.readContentsAsString(story);
-        System.out.println(nowStory);
+        String oldStory = Utils.readContentsAsString(story);
+        writeContents(story, oldStory, text + "\n");
+        System.out.println(Utils.readContentsAsString(story));
     }
 
     /**
@@ -60,7 +61,7 @@ public class CapersRepository {
         // TODO
         Dog newDog = new Dog(name, breed, age);
         newDog.saveDog();
-        System.out.println(newDog.toString());
+        System.out.println(newDog);
     }
 
     /**

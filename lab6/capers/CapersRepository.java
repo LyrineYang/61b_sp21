@@ -12,8 +12,6 @@ import static capers.Utils.*;
  * .capers/ -- top level folder for all persistent data in your lab12 folder
  *    - dogs/ -- folder containing all of the persistent data for dogs
  *    - story -- file containing the current story
- *
- * TODO: change the above structure if you do something different.
  */
 public class CapersRepository {
     /** Current Working Directory. */
@@ -33,7 +31,6 @@ public class CapersRepository {
      *    - story -- file containing the current story
      */
     public static void setupPersistence() {
-        // TODO
         if (!CAPERS_FOLDER.exists()) {
             CAPERS_FOLDER.mkdir(); // 创建 .capers 目录
         }
@@ -57,8 +54,6 @@ public class CapersRepository {
      * @param text String of the text to be appended to the story
      */
     public static void writeStory(String text) {
-        // TODO
-
         File story = Utils.join(CAPERS_FOLDER, "story");
         String oldStory = Utils.readContentsAsString(story);
         writeContents(story, oldStory, text + "\n");
@@ -71,7 +66,6 @@ public class CapersRepository {
      * Also prints out the dog's information using toString().
      */
     public static void makeDog(String name, String breed, int age) {
-        // TODO
         Dog newDog = new Dog(name, breed, age);
         newDog.saveDog();
         System.out.println(newDog);
@@ -84,7 +78,6 @@ public class CapersRepository {
      * @param name String name of the Dog whose birthday we're celebrating.
      */
     public static void celebrateBirthday(String name) {
-        // TODO
         Dog thisDog = Dog.fromFile(name);
         thisDog.haveBirthday();
         thisDog.saveDog();

@@ -127,7 +127,7 @@ public class Repository {
         Commit newCommit = new Commit(sha1(headCommit), commitMessage, getTimeStampString());
 
         /* load the headCommit map and put the staging area: the stagingAreaMap */
-        newCommit.nameIDMap = new HashMap<>(newCommit.nameIDMap);
+        newCommit.nameIDMap = new HashMap<>(headCommit.nameIDMap);
         newCommit.nameIDMap.putAll(stagingAreaMap);
 
         /* build the newCommit File in Commits directory to save it */

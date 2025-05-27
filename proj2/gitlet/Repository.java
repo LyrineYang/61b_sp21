@@ -1,12 +1,12 @@
 package gitlet;
 
+import net.sf.saxon.expr.Component;
+import org.checkerframework.checker.units.qual.C;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 import static gitlet.Utils.*;
 
@@ -21,7 +21,6 @@ import static gitlet.Utils.*;
 public class Repository {
     /**
      * TODO: add instance variables here.
-     *
      * List all instance variables of the Repository class here with a useful
      * comment above them describing what that variable represents and how that
      * variable is used. We've provided two examples for you.
@@ -38,7 +37,7 @@ public class Repository {
     private static final File INDEX_FILE = join(GITLET_DIR, "index");
     private static final File BRANCHES_DIR = join(GITLET_DIR, "branches");
     private static final File MASTER_FILE = join(BRANCHES_DIR, "master");
-
+    private static final String DELETE_MARKER = "DELETE_FILE";
     /* TODO: fill in the rest of this class. */
 
     /** to create the gitlet directory and the file structure */
@@ -72,8 +71,8 @@ public class Repository {
         try {
             HEAD_FILE.createNewFile();
             INDEX_FILE.createNewFile();
-            HashMap<String, String> addTree = new HashMap<>();
-            writeObject(INDEX_FILE, addTree);
+            HashMap<String, String> stagingArea = new HashMap<>();
+            writeObject(INDEX_FILE, stagingArea);
             MASTER_FILE.createNewFile();
         } catch (IOException excp) {
             throw new RuntimeException(excp);
@@ -118,6 +117,9 @@ public class Repository {
     }
 
     public static void commit(String commitMessage) {
+        if (commitMessage.isEmpty()) {
+            System.out.println("Please enter a commit message.");
+        }
         /* check if there is file in staging area to commit */
         HashMap<String, String> stagingAreaMap = readObject(INDEX_FILE, HashMap.class);
         if (stagingAreaMap.isEmpty()) {
@@ -133,14 +135,12 @@ public class Repository {
             String fileName = entry.getKey();
             String blobID = entry.getValue();
             /* if there are file need to delete, remove it from nameIDMap to cancel tracking of it */
-            if (blobID.equals("DELETE_FILE")) {
+            if (blobID.equals(DELETE_MARKER)) {
                 newCommit.nameIDMap.remove(fileName);
             } else {
                 newCommit.nameIDMap.put(fileName, blobID);
             }
         }
-
-        newCommit.nameIDMap.putAll(stagingAreaMap);
 
         /* build the newCommit File in Commits directory to save it */
         String newCommitID = sha1(newCommit);
@@ -169,12 +169,12 @@ public class Repository {
         boolean stagingAreaChanged = false;
         Commit headCommit = getHeadCommit();
         HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
-        if (stagingArea.containsKey(fileName) && !stagingArea.get(fileName).equals("DELETE_FILE")) {
+        if (stagingArea.containsKey(fileName) && !stagingArea.get(fileName).equals(DELETE_MARKER)) {
             stagingArea.remove(fileName);
             stagingAreaChanged = true;
         }
         if (headCommit.nameIDMap.containsKey(fileName)) {
-            stagingArea.put(fileName, "DELETE_FILE");
+            stagingArea.put(fileName, DELETE_MARKER);
             stagingAreaChanged = true;
             File CWDFileToRm = join(CWD, fileName);
             if (CWDFileToRm.exists()) {
@@ -187,5 +187,139 @@ public class Repository {
         }
         writeObject(INDEX_FILE, stagingArea);
     }
+    public static void log() {
+        Commit headCommit = getHeadCommit();
+        logHelper(headCommit, sha1(headCommit));
+    }
+    private static void logHelper(Commit currentCommit, String commitID) {
+        String parentCommitID = currentCommit.parentID;
+        logPrintHelper(currentCommit, commitID);
+        if (parentCommitID == null) {
+            return;
+        }
+        File parentCommit = join(COMMITS_DIR, parentCommitID);
+        logHelper(readObject(parentCommit, Commit.class), parentCommitID);
+    }
+
+    private static void logPrintHelper(Commit currentCommit, String commitID) {
+        System.out.println("===");
+        System.out.println("commit " + commitID);
+        if (currentCommit.secondParentID != null) {
+            System.out.println("Merge " + currentCommit.parentID.substring(0, 7) + " " + currentCommit.secondParentID.substring(0, 7));
+        }
+        System.out.println("Date: " + currentCommit.timeStamp);
+        System.out.println(currentCommit.commitMessage);
+        System.out.println();
+    }
+
+    public static void globalLog() {
+        List<String> commitIDList = plainFilenamesIn(COMMITS_DIR);
+        if (commitIDList != null) {
+            for (String commitID: commitIDList) {
+                Commit currentCommit = readObject(join(COMMITS_DIR, commitID), Commit.class);
+                logPrintHelper(currentCommit, commitID);
+            }
+        }
+    }
+
+    public static void find(String commitMessageToFind) {
+        List<String> commitIDList = plainFilenamesIn(COMMITS_DIR);
+        boolean commitMessageExist = false;
+        if (commitIDList != null) {
+            for (String commitID : commitIDList) {
+                Commit currentCommit = readObject(join(COMMITS_DIR, commitID), Commit.class);
+                if (currentCommit.commitMessage.equals(commitMessageToFind)) {
+                    System.out.println(commitID);
+                    commitMessageExist = true;
+                }
+            }
+        }
+        if (!commitMessageExist) {
+            System.out.println("Found no commit with that message.");
+        }
+    }
+
+    public static void status() {
+        System.out.println("=== " + "Branches" + " ===");
+        List<String> branchesList = plainFilenamesIn(BRANCHES_DIR);
+        if (branchesList != null) {
+            for (String branch: branchesList) {
+                if (branch.equals(readContentsAsString(HEAD_FILE))) {
+                    System.out.println("*" + branch);
+                } else {
+                    System.out.println(branch);
+                }
+            }
+        }
+        System.out.println();
+        System.out.println("=== " + "Staged Files" + " ===");
+        HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
+        Set<String> stagingAreaKeys = stagingArea.keySet();
+        for (String key: stagingAreaKeys) {
+            if (!stagingArea.get(key).equals(DELETE_MARKER)) {
+                System.out.println(key);
+            }
+        }
+        System.out.println();
+        System.out.println("=== " + "Removed Files" + " ===");
+        for (String key: stagingAreaKeys) {
+            if (stagingArea.get(key).equals(DELETE_MARKER)) {
+                System.out.println(key);
+            }
+        }
+        System.out.println();
+        System.out.println("=== " + "Modifications Not Staged For Commit" + " ===");
+        System.out.println();
+        System.out.println("=== " + "Untracked Files" + " ===");
+        System.out.println();
+    }
+    public static void checkOut(String[] args) {
+        if (Main.argsCheck(args, 3)) {
+            checkOutHeadCommit(args[2]);
+        } else if (Main.argsCheck(args, 4)) {
+            checkOutSpecialCommit(args[1], args[3]);
+        } else if (Main.argsCheck(args, 2)){
+            checkOutBranch(args[1]);
+        }
+    }
+    private static void checkOutHeadCommit(String fileName) {
+        Commit headCommit = getHeadCommit();
+        checkOutSpecialCommit(sha1(headCommit), fileName);
+    }
+    private static void checkOutSpecialCommit(String commitID, String fileName) {
+        File specialCommitFile = join(COMMITS_DIR, commitID);
+        if (!specialCommitFile.exists()) {
+            System.out.println("No commit with that id exists.");
+            return;
+        }
+        Commit specialCommit = readObject(specialCommitFile, Commit.class);
+        if (!specialCommit.nameIDMap.containsKey(fileName)) {
+            System.out.println("File does not exist in that commit.");
+            return;
+        }
+        String blobID = specialCommit.nameIDMap.get(fileName);
+        restoreFromID(fileName, blobID);
+    }
+    private static void checkOutBranch(String givenBranchName) {
+        File givenBranchFile = join(BRANCHES_DIR, givenBranchName);
+        if (!givenBranchFile.exists()) {
+            System.out.println("No such branch exists.");
+        } else if (givenBranchName.equals(readContentsAsString(HEAD_FILE))) {
+            System.out.println("No need to checkout the current branch.");
+        }
+        Commit givenHeadCommit = readObject(join(COMMITS_DIR, readContentsAsString(givenBranchFile)), Commit.class);
+        for (HashMap.Entry<String, String> entry : givenHeadCommit.nameIDMap.entrySet()) {
+            String fileName = entry.getKey();
+            String blobID = entry.getValue();
+            restoreFromID(fileName, blobID);
+        }
+    }
+    private static void restoreFromID(String fileName, String blobID) {
+        File fileToCheckOut = join(CWD, fileName);
+        Blob checkOutBlob = readObject(join(BLOBS_DIR, blobID), Blob.class);
+        writeContents(fileToCheckOut, checkOutBlob.getContent());
+    }
+
+
 
 }

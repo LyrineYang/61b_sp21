@@ -21,11 +21,11 @@ public class Commit implements Serializable {
      * variable is used. We've provided one example for `message`.
      */
 
-    private String parentID;
+    public String parentID;
     /** The message of this Commit. */
-    private String commitMessage;
-    private String timeStamp;
-    private String secondParentID;
+    public String commitMessage;
+    public String timeStamp;
+    public String secondParentID;
     public HashMap<String, String> nameIDMap;
     public Commit(String p, String c, String t) {
         parentID = p;

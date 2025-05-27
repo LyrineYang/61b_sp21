@@ -10,4 +10,8 @@ public class Blob implements Serializable {
     public Blob(byte[] byteContent) {
         content = byteContent;
     }
+
+    public byte[] getContent() {
+        return content;
+    }
 }

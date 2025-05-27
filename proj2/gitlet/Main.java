@@ -14,11 +14,11 @@ public class Main {
         switch(firstArg) {
             case "init":
                 // TODO: add the exception deal
-                Repository.initRepository();
+                Repository.init();
                 break;
             case "add":
                 // TODO: add the exception deal
-                Repository.addRepository(args[1]);
+                Repository.add(args[1]);
                 break;
             case "commit":
                 // TODO: add the exception deal

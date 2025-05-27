@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import static gitlet.Utils.*;
 
@@ -41,7 +42,7 @@ public class Repository {
     /* TODO: fill in the rest of this class. */
 
     /** to create the gitlet directory and the file structure */
-    public static void initRepository() {
+    public static void init() {
         if (GITLET_DIR.exists()) {
             System.out.println("A Gitlet version-control system already exists in the current directory.");
             return;
@@ -79,7 +80,7 @@ public class Repository {
         }
     }
     /** add the file need to add to blobs directory and add the key-value to index */
-    public static void addRepository(String fileName) {
+    public static void add(String fileName) {
         File fileToAdd = join(CWD, fileName);
         if (!fileToAdd.exists()) {
             System.out.println("File does not exist.");
@@ -128,6 +129,17 @@ public class Repository {
 
         /* load the headCommit map and put the staging area: the stagingAreaMap */
         newCommit.nameIDMap = new HashMap<>(headCommit.nameIDMap);
+        for (HashMap.Entry<String, String> entry : stagingAreaMap.entrySet()) {
+            String fileName = entry.getKey();
+            String blobID = entry.getValue();
+            /* if there are file need to delete, remove it from nameIDMap to cancel tracking of it */
+            if (blobID.equals("DELETE_FILE")) {
+                newCommit.nameIDMap.remove(fileName);
+            } else {
+                newCommit.nameIDMap.put(fileName, blobID);
+            }
+        }
+
         newCommit.nameIDMap.putAll(stagingAreaMap);
 
         /* build the newCommit File in Commits directory to save it */
@@ -151,6 +163,29 @@ public class Repository {
         Date timeStamp = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
         return formatter.format(timeStamp);
+    }
+    public static void remove(String fileName) {
+        /* get the head commit and staging area map */
+        boolean stagingAreaChanged = false;
+        Commit headCommit = getHeadCommit();
+        HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
+        if (stagingArea.containsKey(fileName) && !stagingArea.get(fileName).equals("DELETE_FILE")) {
+            stagingArea.remove(fileName);
+            stagingAreaChanged = true;
+        }
+        if (headCommit.nameIDMap.containsKey(fileName)) {
+            stagingArea.put(fileName, "DELETE_FILE");
+            stagingAreaChanged = true;
+            File CWDFileToRm = join(CWD, fileName);
+            if (CWDFileToRm.exists()) {
+                restrictedDelete(CWDFileToRm);
+            }
+        }
+        if (!stagingAreaChanged) {
+            System.out.println("No reason to remove the file.");
+            return;
+        }
+        writeObject(INDEX_FILE, stagingArea);
     }
 
 }

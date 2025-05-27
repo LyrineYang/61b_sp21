@@ -1,8 +1,5 @@
 package gitlet;
 
-import net.sf.saxon.expr.Component;
-import org.checkerframework.checker.units.qual.C;
-
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -117,7 +114,7 @@ public class Repository {
     }
 
     public static void commit(String commitMessage) {
-        if (commitMessage.isEmpty()) {
+        if (commitMessage.trim().isEmpty()) {
             System.out.println("Please enter a commit message.");
         }
         /* check if there is file in staging area to commit */
@@ -271,6 +268,10 @@ public class Repository {
         System.out.println("=== " + "Modifications Not Staged For Commit" + " ===");
         System.out.println();
         System.out.println("=== " + "Untracked Files" + " ===");
+        List<String> untrackedFileList = getUntrackedFileList();
+        for (String fileName: untrackedFileList) {
+            System.out.println(fileName);
+        }
         System.out.println();
     }
     public static void checkOut(String[] args) {
@@ -302,24 +303,109 @@ public class Repository {
     }
     private static void checkOutBranch(String givenBranchName) {
         File givenBranchFile = join(BRANCHES_DIR, givenBranchName);
+        Commit givenHeadCommit = readObject(join(COMMITS_DIR, readContentsAsString(givenBranchFile)), Commit.class);
         if (!givenBranchFile.exists()) {
             System.out.println("No such branch exists.");
+            return;
         } else if (givenBranchName.equals(readContentsAsString(HEAD_FILE))) {
             System.out.println("No need to checkout the current branch.");
+            return;
+        } else if (!getUntrackedFileList().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileList(), givenHeadCommit.nameIDMap)) {
+            System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+            return;
         }
-        Commit givenHeadCommit = readObject(join(COMMITS_DIR, readContentsAsString(givenBranchFile)), Commit.class);
-        for (HashMap.Entry<String, String> entry : givenHeadCommit.nameIDMap.entrySet()) {
+
+        checkOutFilesInCommit(givenHeadCommit);
+        /* delete the file be tracked in headCommit but not tracked in given headCommit */
+        for (String fileName: getHeadCommit().nameIDMap.keySet()) {
+            if (!givenHeadCommit.nameIDMap.containsKey(fileName)) {
+                restrictedDelete(join(CWD, fileName));
+            }
+        }
+        /* view the given branch as working branch */
+        writeContents(HEAD_FILE, givenBranchName);
+
+        /* clean up the staging area */
+        writeObject(INDEX_FILE, new HashMap<>());
+    }
+    /** check out all files in given Commit into CWD */
+    private static void checkOutFilesInCommit(Commit givenCommit) {
+        for (HashMap.Entry<String, String> entry : givenCommit.nameIDMap.entrySet()) {
             String fileName = entry.getKey();
             String blobID = entry.getValue();
             restoreFromID(fileName, blobID);
         }
+    }
+
+    /* check if the untrackedFile is tracked in given head commit map and will be overWritten*/
+    private static boolean checkUntrackedFileOverwritten(List<String> untrackedFile, HashMap<String, String> Map) {
+        for (String fileName: untrackedFile) {
+            if (Map.containsKey(fileName)) {
+                return true;
+            }
+        }
+        return false;
     }
     private static void restoreFromID(String fileName, String blobID) {
         File fileToCheckOut = join(CWD, fileName);
         Blob checkOutBlob = readObject(join(BLOBS_DIR, blobID), Blob.class);
         writeContents(fileToCheckOut, checkOutBlob.getContent());
     }
+    /* get the untracked file list in CWD */
+    private static List<String> getUntrackedFileList() {
+        List<String> filesInCWD = plainFilenamesIn(CWD);
+        if (filesInCWD == null) {
+            return new ArrayList<>();
+        }
+        List<String> untrackedFileList = new ArrayList<>();
+        HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
+        Set<String> stagingAreaKeys = stagingArea.keySet();
+        Set<String> headCommitMaps = getHeadCommit().nameIDMap.keySet();
+        for (String fileName : filesInCWD) {
+            if (!headCommitMaps.contains(fileName) && !stagingAreaKeys.contains(fileName)) {
+                untrackedFileList.add(fileName);
+            }
+        }
+        return untrackedFileList;
+    }
 
+    public static void branch(String branchName) {
+        File newBranch = join(BRANCHES_DIR, branchName);
+        if (newBranch.exists()) {
+            System.out.println("A branch with that name already exists.");
+        }
+        try {
+            newBranch.createNewFile();
+        } catch (IOException excp) {
+            throw new RuntimeException(excp);
+        }
+        Commit headCommit = getHeadCommit();
+        writeContents(newBranch, sha1(headCommit));
+    }
+    public static void rmBranch(String rmBranchName) {
+        File rmBranchFile = join(BRANCHES_DIR, rmBranchName);
+        if (!rmBranchFile.exists()) {
+            System.out.println("A branch with that name does not exist.");
+            return;
+        }
+        if (rmBranchName.equals(readContentsAsString(HEAD_FILE))) {
+            System.out.println("Cannot remove the current branch.");
+            return;
+        }
+        restrictedDelete(rmBranchFile);
+    }
 
-
+    public static void reset(String resetCommitID) {
+        File resetCommitFile = join(COMMITS_DIR, resetCommitID);
+        if (!resetCommitFile.exists()) {
+            System.out.println("No commit with that id exists.");
+        }
+        Commit resetCommit = readObject(resetCommitFile, Commit.class);
+        if (!getUntrackedFileList().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileList(), resetCommit.nameIDMap)) {
+            System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+        }
+        checkOutFilesInCommit(resetCommit);
+        writeContents(join(BRANCHES_DIR, readContentsAsString(HEAD_FILE)), resetCommitID);
+        writeObject(INDEX_FILE, new HashMap<>());
+    }
 }

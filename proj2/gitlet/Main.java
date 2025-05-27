@@ -58,6 +58,17 @@ public class Main {
             case "status":
                 argsCheck(args, 1);
                 Repository.status();
+            case "check-out":
+                Repository.checkOut(args);
+            case "branch":
+                argsCheck(args, 2);
+                Repository.branch(args[1]);
+            case "rm-branch":
+                argsCheck(args, 2);
+                Repository.rmBranch(args[1]);
+            case "reset":
+                argsCheck(args,2);
+                Repository.reset(args[1]);
             default:
                 System.out.println("No command with that name exists.");
             // TODO: FILL THE REST IN

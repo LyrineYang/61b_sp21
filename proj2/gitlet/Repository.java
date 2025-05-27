@@ -116,6 +116,7 @@ public class Repository {
     public static void commit(String commitMessage) {
         if (commitMessage.trim().isEmpty()) {
             System.out.println("Please enter a commit message.");
+            return;
         }
         /* check if there is file in staging area to commit */
         HashMap<String, String> stagingAreaMap = readObject(INDEX_FILE, HashMap.class);
@@ -373,6 +374,7 @@ public class Repository {
         File newBranch = join(BRANCHES_DIR, branchName);
         if (newBranch.exists()) {
             System.out.println("A branch with that name already exists.");
+            return;
         }
         try {
             newBranch.createNewFile();
@@ -399,10 +401,12 @@ public class Repository {
         File resetCommitFile = join(COMMITS_DIR, resetCommitID);
         if (!resetCommitFile.exists()) {
             System.out.println("No commit with that id exists.");
+            return;
         }
         Commit resetCommit = readObject(resetCommitFile, Commit.class);
         if (!getUntrackedFileList().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileList(), resetCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+            return;
         }
         checkOutFilesInCommit(resetCommit);
         writeContents(join(BRANCHES_DIR, readContentsAsString(HEAD_FILE)), resetCommitID);

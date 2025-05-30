@@ -1,23 +1,19 @@
 package gitlet;
 
+import static gitlet.Utils.*;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static gitlet.Utils.*;
-
-// TODO: any imports you need here
-
-/** Represents a gitlet repository.
- *  TODO: It's a good idea to give a description here of what else this Class
+/** Represents a gitlet repository. Includes file path in gitlet directory and implements of gitlet commands by
+ *  store information in files.
  *  does at a high level.
  *
  *  @author Lyrine Yang
  */
 public class Repository {
     /**
-     * TODO: add instance variables here.
      * List all instance variables of the Repository class here with a useful
      * comment above them describing what that variable represents and how that
      * variable is used. We've provided two examples for you.
@@ -35,7 +31,6 @@ public class Repository {
     private static final File BRANCHES_DIR = join(GITLET_DIR, "branches");
     private static final File MASTER_FILE = join(BRANCHES_DIR, "master");
     private static final String DELETE_MARKER = "DELETE_FILE";
-    /* TODO: fill in the rest of this class. */
 
     /** to create the gitlet directory and the file structure */
     public static void init() {
@@ -58,7 +53,8 @@ public class Repository {
         /* make HEAD file hold the working branch information */
         writeContents(HEAD_FILE, "master");
     }
-    /** help method to build up the gitlet directory structure */
+
+    /** build up the gitlet directory structure and store new hashmap in index file*/
     private static void setupPersistence() {
         GITLET_DIR.mkdir();
         OBJECTS_DIR.mkdir();
@@ -75,6 +71,7 @@ public class Repository {
             throw new RuntimeException(excp);
         }
     }
+
     /** add the file need to add to blobs directory and add the key-value to index */
     public static void add(String fileName) {
         File fileToAdd = join(CWD, fileName);
@@ -88,7 +85,7 @@ public class Repository {
 
         /* inverse serialize the index map from index file */
         HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
-        Commit headCommit = getHeadCommit();
+        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
 
         /* check whether current working version of the file is identical to the version in the current commit */
         if (headCommit.nameIDMap.containsKey(fileName) && headCommit.nameIDMap.get(fileName).equals(blobID)) {
@@ -107,10 +104,16 @@ public class Repository {
         stagingArea.put(fileName, blobID);
         writeObject(INDEX_FILE, stagingArea);
     }
-    /** get the current commit object */
-    private static Commit getHeadCommit() {
-        File branchFile = getWorkingBranchFile();
-        return readObject((join(COMMITS_DIR, readContentsAsString(branchFile))), Commit.class);
+
+    /** get commit object according its commitID */
+    private static Commit getCommitByID(String commitID) {
+        return readObject(join(COMMITS_DIR, commitID), Commit.class);
+    }
+
+    /** get the given branch head commit object */
+    private static Commit getBranchHeadCommit(String branchName) {
+        File branchFile = join(BRANCHES_DIR, branchName);
+        return getCommitByID(readContentsAsString(branchFile));
     }
 
     public static void commit(String commitMessage) {
@@ -124,7 +127,7 @@ public class Repository {
             System.out.println("No changes added to the commit.");
             return;
         }
-        Commit headCommit = getHeadCommit();
+        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
         Commit newCommit = new Commit(sha1(headCommit), commitMessage, getTimeStampString());
 
         /* load the headCommit map and put the staging area: the stagingAreaMap */
@@ -150,13 +153,10 @@ public class Repository {
         writeObject(INDEX_FILE, stagingAreaMap);
 
         /* make the HEAD pointer to point at the new commit */
-        File branchFile = getWorkingBranchFile();
-        writeContents(branchFile, newCommitID);
+        writeContents(join(BRANCHES_DIR, readContentsAsString(HEAD_FILE)), newCommitID);
 
     }
-    private static File getWorkingBranchFile() {
-        return join(BRANCHES_DIR, readContentsAsString(HEAD_FILE));
-    }
+
     private static String getTimeStampString() {
         Date timeStamp = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
@@ -165,7 +165,7 @@ public class Repository {
     public static void remove(String fileName) {
         /* get the head commit and staging area map */
         boolean stagingAreaChanged = false;
-        Commit headCommit = getHeadCommit();
+        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
         HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
         if (stagingArea.containsKey(fileName) && !stagingArea.get(fileName).equals(DELETE_MARKER)) {
             stagingArea.remove(fileName);
@@ -186,7 +186,7 @@ public class Repository {
         writeObject(INDEX_FILE, stagingArea);
     }
     public static void log() {
-        Commit headCommit = getHeadCommit();
+        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
         logHelper(headCommit, sha1(headCommit));
     }
     private static void logHelper(Commit currentCommit, String commitID) {
@@ -285,7 +285,7 @@ public class Repository {
         }
     }
     private static void checkOutHeadCommit(String fileName) {
-        Commit headCommit = getHeadCommit();
+        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
         checkOutSpecialCommit(sha1(headCommit), fileName);
     }
     private static void checkOutSpecialCommit(String commitID, String fileName) {
@@ -300,7 +300,7 @@ public class Repository {
             return;
         }
         String blobID = specialCommit.nameIDMap.get(fileName);
-        restoreFromID(fileName, blobID);
+        checkOutFile(fileName, blobID);
     }
     private static void checkOutBranch(String givenBranchName) {
         File givenBranchFile = join(BRANCHES_DIR, givenBranchName);
@@ -318,7 +318,7 @@ public class Repository {
 
         checkOutFilesInCommit(givenHeadCommit);
         /* delete the file be tracked in headCommit but not tracked in given headCommit */
-        for (String fileName: getHeadCommit().nameIDMap.keySet()) {
+        for (String fileName: getBranchHeadCommit(readContentsAsString(HEAD_FILE)).nameIDMap.keySet()) {
             if (!givenHeadCommit.nameIDMap.containsKey(fileName)) {
                 restrictedDelete(join(CWD, fileName));
             }
@@ -334,7 +334,7 @@ public class Repository {
         for (HashMap.Entry<String, String> entry : givenCommit.nameIDMap.entrySet()) {
             String fileName = entry.getKey();
             String blobID = entry.getValue();
-            restoreFromID(fileName, blobID);
+            checkOutFile(fileName, blobID);
         }
     }
 
@@ -347,7 +347,7 @@ public class Repository {
         }
         return false;
     }
-    private static void restoreFromID(String fileName, String blobID) {
+    private static void checkOutFile(String fileName, String blobID) {
         File fileToCheckOut = join(CWD, fileName);
         Blob checkOutBlob = readObject(join(BLOBS_DIR, blobID), Blob.class);
         writeContents(fileToCheckOut, checkOutBlob.getContent());
@@ -361,7 +361,7 @@ public class Repository {
         List<String> untrackedFileList = new ArrayList<>();
         HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
         Set<String> stagingAreaKeys = stagingArea.keySet();
-        Set<String> headCommitMaps = getHeadCommit().nameIDMap.keySet();
+        Set<String> headCommitMaps = getBranchHeadCommit(readContentsAsString(HEAD_FILE)).nameIDMap.keySet();
         for (String fileName : filesInCWD) {
             if (!headCommitMaps.contains(fileName) && !stagingAreaKeys.contains(fileName)) {
                 untrackedFileList.add(fileName);
@@ -381,7 +381,7 @@ public class Repository {
         } catch (IOException excp) {
             throw new RuntimeException(excp);
         }
-        Commit headCommit = getHeadCommit();
+        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
         writeContents(newBranch, sha1(headCommit));
     }
     public static void rmBranch(String rmBranchName) {
@@ -412,4 +412,96 @@ public class Repository {
         writeContents(join(BRANCHES_DIR, readContentsAsString(HEAD_FILE)), resetCommitID);
         writeObject(INDEX_FILE, new HashMap<>());
     }
+    public static void merge(String givenBranchName) {
+        HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
+        if (stagingArea.isEmpty()) {
+            System.out.println("You have uncommitted changes.");
+        }
+        File branchFile = join(BRANCHES_DIR, givenBranchName);
+        if (!branchFile.exists()) {
+            System.out.println("A branch with that name does not exist.");
+        }
+        if (givenBranchName.equals(readContentsAsString(HEAD_FILE))) {
+            System.out.println("Cannot merge a branch with itself.");
+        }
+        Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
+        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
+        String givenBranchHeadCommitID = sha1(givenBranchHeadCommit);
+        String headCommitID = sha1(headCommit);
+        String splitPointID = getSplitPointID(givenBranchHeadCommitID, headCommitID);
+        Commit splitPoint = getCommitByID(splitPointID);
+        if (splitPointID.equals(givenBranchHeadCommitID)) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            return;
+        }
+        if (splitPointID.equals(headCommitID)) {
+            checkOutBranch(givenBranchName);
+            System.out.println("Current branch fast-forwarded.");
+            return;
+        }
+        /* all files in split point commit */
+        Set<String> filesInSplitPoint = splitPoint.nameIDMap.keySet();
+        /* all files in current branch head commit */
+        Set<String> filesInCurrentBranch = headCommit.nameIDMap.keySet();
+        /* all files in given branch head commit */
+        Set<String> filesInGivenBranch = givenBranchHeadCommit.nameIDMap.keySet();
+        /* all files both in given branch head commit and split point, changed in given branch head commit */
+        Set<String> changeFilesToGivenBranch = changeFilesBetweenCommit(splitPoint, givenBranchHeadCommit, filesInSplitPoint);
+        /* all files both in head commit and split point, changed in head commit */
+        Set<String> changeFilesToCurrentBranch = changeFilesBetweenCommit(splitPoint, headCommit, filesInSplitPoint);
+        /* files only changed in given branch head commit, exist in all three commits */
+        Set<String> changeFilesOnlyInGivenBranch = new HashSet<>(changeFilesToGivenBranch);
+        changeFilesOnlyInGivenBranch.removeAll(changeFilesToCurrentBranch);
+        for (String fileName: changeFilesOnlyInGivenBranch) {
+            checkOutSpecialCommit(givenBranchHeadCommitID, fileName);
+            stagingArea.put(fileName, givenBranchHeadCommit.nameIDMap.get(fileName));
+        }
+        /* files only exist in given branch head commits */
+        Set<String> presentOnlyInGivenBranchFiles = new HashSet<>(filesInGivenBranch);
+        presentOnlyInGivenBranchFiles.removeAll(filesInSplitPoint);
+        presentOnlyInGivenBranchFiles.removeAll(filesInCurrentBranch);
+        for (String fileName: presentOnlyInGivenBranchFiles) {
+            checkOutSpecialCommit(givenBranchHeadCommitID, fileName);
+            stagingArea.put(fileName, givenBranchHeadCommit.nameIDMap.get(fileName));
+        }
+        /* files exist in split point, unchanged files in head commit and don't exist in given branch head commit */
+        Set<String> unChangedFilesToCurrentBranch = new HashSet<>(filesInSplitPoint);
+        unChangedFilesToCurrentBranch.removeAll(changeFilesToCurrentBranch);
+        unChangedFilesToCurrentBranch.removeAll(filesInGivenBranch);
+        for (String fileName: unChangedFilesToCurrentBranch) {
+            remove(fileName);
+        }
+        Set<String> conflictFiles = new HashSet<>();
+    }
+    private static Set<String> changeFilesBetweenCommit(Commit commitChangeFrom, Commit commitChangeTo, Set<String> filesInCommit) {
+        Set<String> changeFiles = new HashSet<>();
+        for (String fileName: filesInCommit) {
+            if (commitChangeTo.nameIDMap.containsKey(fileName) && !commitChangeFrom.nameIDMap.get(fileName).equals(commitChangeTo.nameIDMap.get(fileName))) {
+                changeFiles.add(fileName);
+            }
+        }
+        return changeFiles;
+    }
+    /** get the split point commitID */
+    private static String getSplitPointID(String givenBranchHeadCommitID, String headCommitID) {
+        HashSet<String> commitIDSet = new HashSet<>();
+        commitIDSet.add(headCommitID);
+        Commit headCommit = getCommitByID(headCommitID);
+        Commit givenBranchHeadCommit = getCommitByID(givenBranchHeadCommitID);
+        while (headCommit.parentID != null) {
+            commitIDSet.add(headCommit.parentID);
+            headCommit = getCommitByID(headCommit.parentID);
+        }
+        if (commitIDSet.contains(givenBranchHeadCommitID)) {
+            return givenBranchHeadCommitID;
+        }
+        while (givenBranchHeadCommit.parentID != null) {
+            if (commitIDSet.contains(givenBranchHeadCommit.parentID)) {
+                return givenBranchHeadCommit.parentID;
+            }
+            givenBranchHeadCommit = getCommitByID(givenBranchHeadCommit.parentID);
+        }
+        return null;
+    }
+
 }

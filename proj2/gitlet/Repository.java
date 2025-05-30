@@ -1,7 +1,5 @@
 package gitlet;
 
-import net.sf.saxon.trans.SymbolicName;
-
 import static gitlet.Utils.*;
 import java.io.File;
 import java.io.IOException;
@@ -279,7 +277,7 @@ public class Repository {
     }
     public static void checkOut(String[] args) {
         if (args.length == 3 && args[1].equals("--")) {
-           checkOutHeadCommit(args[2]);
+            checkOutHeadCommit(args[2]);
         } else if (args.length == 4 && args[2].equals("--")) {
             checkOutSpecialCommit(args[1], args[3]);
         } else if (args.length == 2 ){
@@ -295,6 +293,7 @@ public class Repository {
         String blobID = headCommit.nameIDMap.get(fileName);
         checkOutFile(fileName, blobID);
     }
+
 
     private static void checkOutSpecialCommit(String commitID, String fileName) {
         File specialCommitFile = join(COMMITS_DIR, commitID);

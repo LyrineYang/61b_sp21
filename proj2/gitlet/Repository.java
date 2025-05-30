@@ -190,7 +190,7 @@ public class Repository {
     }
     public static void log() {
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        logHelper(headCommit, sha1(headCommit));
+        logHelper(headCommit, sha1(serialize(headCommit)));
     }
     private static void logHelper(Commit currentCommit, String commitID) {
         String parentCommitID = currentCommit.parentID;

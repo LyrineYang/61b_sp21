@@ -64,7 +64,7 @@ public class Main {
                 argsCheck(args, 1);
                 Repository.status();
                 break;
-            case "check-out":
+            case "checkout":
                 Repository.checkOut(args);
                 break;
             case "branch":

@@ -275,6 +275,40 @@ public class Repository {
         }
         System.out.println();
     }
+    private static String findFullCommitIDFromShort(String shortId) {
+    if (shortId == null || shortId.length() > UID_LENGTH) { // UID_LENGTH from Utils
+        return null; // Or invalid
+    }
+    if (shortId.length() == UID_LENGTH) { // Already a full ID
+        if (join(COMMITS_DIR, shortId).exists()) {
+            return shortId;
+        }
+        return null;
+    }
+
+    List<String> commitIds = plainFilenamesIn(COMMITS_DIR);
+    if (commitIds == null) {
+        return null;
+    }
+
+    String foundId = null;
+    int matchCount = 0;
+    for (String id : commitIds) {
+        if (id.startsWith(shortId)) {
+            matchCount++;
+            foundId = id;
+        }
+    }
+
+    if (matchCount == 1) {
+        return foundId;
+    } else if (matchCount > 1) {
+        // Handle ambiguous short ID - spec might say what to do, or just fail
+        // For now, returning null for "not found / ambiguous"
+        return null;
+    }
+    return null; // No match
+}
     public static void checkOut(String[] args) {
         if (args.length == 3 && args[1].equals("--")) {
             checkOutHeadCommit(args[2]);
@@ -296,19 +330,25 @@ public class Repository {
 
 
     private static void checkOutSpecialCommit(String commitID, String fileName) {
-        File specialCommitFile = join(COMMITS_DIR, commitID);
-        if (!specialCommitFile.exists()) {
-            System.out.println("No commit with that id exists.");
-            return;
-        }
-        Commit specialCommit = readObject(specialCommitFile, Commit.class);
-        if (!specialCommit.nameIDMap.containsKey(fileName)) {
-            System.out.println("File does not exist in that commit.");
-            return;
-        }
-        String blobID = specialCommit.nameIDMap.get(fileName);
-        checkOutFile(fileName, blobID);
+    String fullCommitID = findFullCommitIDFromShort(commitID); // ★ 新增调用
+    if (fullCommitID == null) {
+        System.out.println("No commit with that id exists.");
+        return;
     }
+
+    File specialCommitFile = join(COMMITS_DIR, fullCommitID); // 使用完整ID
+    // if (!specialCommitFile.exists()) { // 这个检查其实被 findFullCommitIDFromShort 包含了
+    //     System.out.println("No commit with that id exists.");
+    //     return;
+    // }
+    Commit specialCommit = readObject(specialCommitFile, Commit.class);
+    if (!specialCommit.nameIDMap.containsKey(fileName)) {
+        System.out.println("File does not exist in that commit.");
+        return;
+    }
+    String blobID = specialCommit.nameIDMap.get(fileName);
+    checkOutFile(fileName, blobID);
+}
     private static void checkOutBranch(String givenBranchName) {
         File givenBranchFile = join(BRANCHES_DIR, givenBranchName);
         Commit givenHeadCommit = readObject(join(COMMITS_DIR, readContentsAsString(givenBranchFile)), Commit.class);

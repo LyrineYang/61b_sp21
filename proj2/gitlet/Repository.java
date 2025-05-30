@@ -472,6 +472,32 @@ public class Repository {
             remove(fileName);
         }
         Set<String> conflictFiles = new HashSet<>();
+        Set<String> bothChangedFiles = new HashSet<>(changeFilesToCurrentBranch);
+        bothChangedFiles.retainAll(changeFilesToGivenBranch);
+        for (String fileName: bothChangedFiles) {
+            if (!headCommit.nameIDMap.get(fileName).equals(givenBranchHeadCommit.nameIDMap.get(fileName))) {
+                conflictFiles.add(fileName);
+            }
+        }
+        for (String fileName: changeFilesToCurrentBranch) {
+            if (!givenBranchHeadCommit.nameIDMap.containsKey(fileName)) {
+                conflictFiles.add(fileName);
+            }
+        }
+        for (String fileName: changeFilesToGivenBranch) {
+            if (!headCommit.nameIDMap.containsKey(fileName)) {
+                conflictFiles.add(fileName);
+            }
+        }
+        Set<String> filesInGivenBranchNoExistInSplitPoint = new HashSet<>(filesInGivenBranch);
+        filesInGivenBranchNoExistInSplitPoint.removeAll(filesInSplitPoint);
+        Set<String> filesInCurrentBranchNoExistInSplitPoint = new HashSet<>(filesInCurrentBranch);
+        filesInCurrentBranchNoExistInSplitPoint.removeAll(filesInSplitPoint);
+        for (String fileName: filesInCurrentBranchNoExistInSplitPoint) {
+            if (filesInGivenBranchNoExistInSplitPoint.contains(fileName) && !givenBranchHeadCommit.nameIDMap.get(fileName).equals(headCommit.nameIDMap.get(fileName))) {
+                conflictFiles.add(fileName);
+            }
+        }
     }
     private static Set<String> changeFilesBetweenCommit(Commit commitChangeFrom, Commit commitChangeTo, Set<String> filesInCommit) {
         Set<String> changeFiles = new HashSet<>();

@@ -69,6 +69,7 @@ public class Main {
             case "reset":
                 argsCheck(args,2);
                 Repository.reset(args[1]);
+            case "merge":
             default:
                 System.out.println("No command with that name exists.");
             // TODO: FILL THE REST IN

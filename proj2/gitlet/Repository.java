@@ -157,9 +157,6 @@ public class Repository {
         writeContents(join(BRANCHES_DIR, readContentsAsString(HEAD_FILE)), newCommitID);
 
     }
-    private static void commitMerge(String commitMessage, String secondParentID) {
-
-    }
     private static String getTimeStampString() {
         Date timeStamp = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
@@ -279,18 +276,17 @@ public class Repository {
         System.out.println();
     }
     public static void checkOut(String[] args) {
-        if (Main.argsCheck(args, 3)) {
-            checkOutHeadCommit(args[2]);
-        } else if (Main.argsCheck(args, 4)) {
+        if (args.length == 3 && args[1].equals("--")) {
+            checkOutSpecialCommit(sha1(serialize(getBranchHeadCommit(readContentsAsString(HEAD_FILE)))), args[2]);
+        } else if (args.length == 4 && args[2].equals("--")) {
             checkOutSpecialCommit(args[1], args[3]);
-        } else if (Main.argsCheck(args, 2)){
+        } else if (args.length == 2 ){
             checkOutBranch(args[1]);
+        } else {
+            System.out.println("Incorrect operands.");
         }
     }
-    private static void checkOutHeadCommit(String fileName) {
-        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        checkOutSpecialCommit(sha1(serialize(headCommit)), fileName);
-    }
+
     private static void checkOutSpecialCommit(String commitID, String fileName) {
         File specialCommitFile = join(COMMITS_DIR, commitID);
         if (!specialCommitFile.exists()) {

@@ -282,8 +282,6 @@ public class Repository {
             checkOutSpecialCommit(args[1], args[3]);
         } else if (args.length == 2 ){
             checkOutBranch(args[1]);
-        } else {
-            System.out.println("Incorrect operands.");
         }
     }
 
@@ -408,6 +406,12 @@ public class Repository {
             return;
         }
         checkOutFilesInCommit(resetCommit);
+        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
+        for (String fileName: headCommit.nameIDMap.keySet()) {
+            if(!resetCommit.nameIDMap.containsKey(fileName)) {
+                restrictedDelete(join(CWD, fileName));
+            }
+        }
         writeContents(join(BRANCHES_DIR, readContentsAsString(HEAD_FILE)), resetCommitID);
         writeObject(INDEX_FILE, new HashMap<>());
     }
@@ -428,6 +432,10 @@ public class Repository {
         }
         Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
+        if (!getUntrackedFileList().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileList(), givenBranchHeadCommit.nameIDMap) && checkUntrackedFileOverwritten(getUntrackedFileList(), headCommit.nameIDMap)) {
+            System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+            return;
+        }
         String givenBranchHeadCommitID = sha1(serialize(givenBranchHeadCommit));
         String headCommitID = sha1(serialize(headCommit));
         String splitPointID = getSplitPointID(givenBranchHeadCommitID, headCommitID);

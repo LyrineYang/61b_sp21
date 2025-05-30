@@ -15,6 +15,7 @@ public class Main {
     public static boolean argsCheck(String[] args, int length) {
         if (args.length != length) {
             System.out.println("Incorrect operands.");
+            System.exit(0);
             return false;
         }
         return true;
@@ -46,33 +47,44 @@ public class Main {
             case "rm":
                 argsCheck(args, 2);
                 Repository.remove(args[1]);
+                break;
             case "log":
                 argsCheck(args, 1);
                 Repository.log();
+                break;
             case "global-log":
                 argsCheck(args, 1);
                 Repository.globalLog();
+                break;
             case "find":
                 argsCheck(args, 2);
                 Repository.find(args[1]);
+                break;
             case "status":
                 argsCheck(args, 1);
                 Repository.status();
+                break;
             case "check-out":
                 Repository.checkOut(args);
+                break;
             case "branch":
                 argsCheck(args, 2);
                 Repository.branch(args[1]);
+                break;
             case "rm-branch":
                 argsCheck(args, 2);
                 Repository.rmBranch(args[1]);
+                break;
             case "reset":
                 argsCheck(args,2);
                 Repository.reset(args[1]);
+                break;
             case "merge":
+                argsCheck(args, 2);
+                Repository.merge(args[1]);
+                break;
             default:
                 System.out.println("No command with that name exists.");
-            // TODO: FILL THE REST IN
         }
     }
 }

@@ -28,9 +28,13 @@ public class Commit implements Serializable {
     public String secondParentID;
     public HashMap<String, String> nameIDMap;
     public Commit(String p, String c, String t) {
+        this(p, c, t, null);
+    }
+    public Commit(String p, String c, String t, String secondParentID) {
         parentID = p;
         commitMessage = c;
         timeStamp = t;
+        this.secondParentID = secondParentID;
         this.nameIDMap = new HashMap<>();
     }
 

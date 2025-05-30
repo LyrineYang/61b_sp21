@@ -43,7 +43,7 @@ public class Repository {
         Date epochTime = new Date(0L);
         SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
         Commit initialCommit = new Commit(null, "initial commit", formatter.format(epochTime));
-        String initialCommitID = sha1(initialCommit);
+        String initialCommitID = sha1(serialize(initialCommit));
         File initialCommitFile = join(COMMITS_DIR, initialCommitID);
         writeObject(initialCommitFile, initialCommit);
 
@@ -115,20 +115,22 @@ public class Repository {
         File branchFile = join(BRANCHES_DIR, branchName);
         return getCommitByID(readContentsAsString(branchFile));
     }
-
     public static void commit(String commitMessage) {
+        commit(commitMessage, null);
+    }
+    private static void commit(String commitMessage, String secondParentCommitID) {
         if (commitMessage.trim().isEmpty()) {
             System.out.println("Please enter a commit message.");
             return;
         }
         /* check if there is file in staging area to commit */
         HashMap<String, String> stagingAreaMap = readObject(INDEX_FILE, HashMap.class);
-        if (stagingAreaMap.isEmpty()) {
+        if (stagingAreaMap.isEmpty() && secondParentCommitID == null) {
             System.out.println("No changes added to the commit.");
             return;
         }
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        Commit newCommit = new Commit(sha1(headCommit), commitMessage, getTimeStampString());
+        Commit newCommit = new Commit(sha1(serialize(headCommit)), commitMessage, getTimeStampString(), secondParentCommitID);
 
         /* load the headCommit map and put the staging area: the stagingAreaMap */
         newCommit.nameIDMap = new HashMap<>(headCommit.nameIDMap);
@@ -144,19 +146,20 @@ public class Repository {
         }
 
         /* build the newCommit File in Commits directory to save it */
-        String newCommitID = sha1(newCommit);
+        String newCommitID = sha1(serialize(newCommit));
         File newCommitFile = join(COMMITS_DIR, newCommitID);
         writeObject(newCommitFile, newCommit);
 
         /* clean the stagingArea */
-        stagingAreaMap = new HashMap<>();
-        writeObject(INDEX_FILE, stagingAreaMap);
+        writeObject(INDEX_FILE, new HashMap<String, String>());
 
         /* make the HEAD pointer to point at the new commit */
         writeContents(join(BRANCHES_DIR, readContentsAsString(HEAD_FILE)), newCommitID);
 
     }
+    private static void commitMerge(String commitMessage, String secondParentID) {
 
+    }
     private static String getTimeStampString() {
         Date timeStamp = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
@@ -286,7 +289,7 @@ public class Repository {
     }
     private static void checkOutHeadCommit(String fileName) {
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        checkOutSpecialCommit(sha1(headCommit), fileName);
+        checkOutSpecialCommit(sha1(serialize(headCommit)), fileName);
     }
     private static void checkOutSpecialCommit(String commitID, String fileName) {
         File specialCommitFile = join(COMMITS_DIR, commitID);
@@ -382,7 +385,7 @@ public class Repository {
             throw new RuntimeException(excp);
         }
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        writeContents(newBranch, sha1(headCommit));
+        writeContents(newBranch, sha1(serialize(headCommit)));
     }
     public static void rmBranch(String rmBranchName) {
         File rmBranchFile = join(BRANCHES_DIR, rmBranchName);
@@ -429,8 +432,8 @@ public class Repository {
         }
         Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        String givenBranchHeadCommitID = sha1(givenBranchHeadCommit);
-        String headCommitID = sha1(headCommit);
+        String givenBranchHeadCommitID = sha1(serialize(givenBranchHeadCommit));
+        String headCommitID = sha1(serialize(headCommit));
         String splitPointID = getSplitPointID(givenBranchHeadCommitID, headCommitID);
         Commit splitPoint = getCommitByID(splitPointID);
         if (splitPointID.equals(givenBranchHeadCommitID)) {
@@ -497,7 +500,7 @@ public class Repository {
             writeContents(conflictFile, "<<<<<<< HEAD", contentInCurrentBranch, "=======", contentInGivenBranch, ">>>>>>>");
             byte[] blobContent = readContents(conflictFile);
             Blob newBlob = new Blob(blobContent);
-            stagingArea.put(fileName, sha1(newBlob));
+            stagingArea.put(fileName, sha1(serialize(newBlob)));
 
         }
         if (conflictHappened) {
@@ -505,7 +508,7 @@ public class Repository {
         }
         writeObject(INDEX_FILE, stagingArea);
         String commitMessage = String.format("Merged %s into %s.", givenBranchName, readContentsAsString(HEAD_FILE));
-        commit(commitMessage);
+        commit(commitMessage, givenBranchHeadCommitID);
     }
 
     private static void checkOutAndStage(String fileName, HashMap<String, String> givenHeadCommitMap, HashMap<String, String> stagingArea) {
@@ -520,102 +523,6 @@ public class Repository {
     private static boolean changedFromCommit(String fileName, HashMap<String, String> commitChangedFrom, HashMap<String, String> commitChangedTo) {
         return !commitChangedFrom.get(fileName).equals(commitChangedTo.get(fileName));
     }
-//    public static void merge(String givenBranchName) {
-//        HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
-//        if (!stagingArea.isEmpty()) {
-//            System.out.println("You have uncommitted changes.");
-//        }
-//        File branchFile = join(BRANCHES_DIR, givenBranchName);
-//        if (!branchFile.exists()) {
-//            System.out.println("A branch with that name does not exist.");
-//        }
-//        if (givenBranchName.equals(readContentsAsString(HEAD_FILE))) {
-//            System.out.println("Cannot merge a branch with itself.");
-//        }
-//        Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
-//        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-//        String givenBranchHeadCommitID = sha1(givenBranchHeadCommit);
-//        String headCommitID = sha1(headCommit);
-//        String splitPointID = getSplitPointID(givenBranchHeadCommitID, headCommitID);
-//        Commit splitPoint = getCommitByID(splitPointID);
-//        if (splitPointID.equals(givenBranchHeadCommitID)) {
-//            System.out.println("Given branch is an ancestor of the current branch.");
-//            return;
-//        }
-//        if (splitPointID.equals(headCommitID)) {
-//            checkOutBranch(givenBranchName);
-//            System.out.println("Current branch fast-forwarded.");
-//            return;
-//        }
-//        /* all files in split point commit */
-//        Set<String> filesInSplitPoint = splitPoint.nameIDMap.keySet();
-//        /* all files in current branch head commit */
-//        Set<String> filesInCurrentBranch = headCommit.nameIDMap.keySet();
-//        /* all files in given branch head commit */
-//        Set<String> filesInGivenBranch = givenBranchHeadCommit.nameIDMap.keySet();
-//        /* all files both in given branch head commit and split point, changed in given branch head commit */
-//        Set<String> changeFilesToGivenBranch = changeFilesBetweenCommit(splitPoint, givenBranchHeadCommit, filesInSplitPoint);
-//        /* all files both in head commit and split point, changed in head commit */
-//        Set<String> changeFilesToCurrentBranch = changeFilesBetweenCommit(splitPoint, headCommit, filesInSplitPoint);
-//        /* files only changed in given branch head commit, exist in all three commits */
-//        Set<String> changeFilesOnlyInGivenBranch = new HashSet<>(changeFilesToGivenBranch);
-//        changeFilesOnlyInGivenBranch.removeAll(changeFilesToCurrentBranch);
-//        for (String fileName: changeFilesOnlyInGivenBranch) {
-//            checkOutSpecialCommit(givenBranchHeadCommitID, fileName);
-//            stagingArea.put(fileName, givenBranchHeadCommit.nameIDMap.get(fileName));
-//        }
-//        /* files only exist in given branch head commits */
-//        Set<String> presentOnlyInGivenBranchFiles = new HashSet<>(filesInGivenBranch);
-//        presentOnlyInGivenBranchFiles.removeAll(filesInSplitPoint);
-//        presentOnlyInGivenBranchFiles.removeAll(filesInCurrentBranch);
-//        for (String fileName: presentOnlyInGivenBranchFiles) {
-//            checkOutSpecialCommit(givenBranchHeadCommitID, fileName);
-//            stagingArea.put(fileName, givenBranchHeadCommit.nameIDMap.get(fileName));
-//        }
-//        /* files exist in split point, unchanged files in head commit and don't exist in given branch head commit */
-//        Set<String> unChangedFilesToCurrentBranch = new HashSet<>(filesInSplitPoint);
-//        unChangedFilesToCurrentBranch.removeAll(changeFilesToCurrentBranch);
-//        unChangedFilesToCurrentBranch.removeAll(filesInGivenBranch);
-//        for (String fileName: unChangedFilesToCurrentBranch) {
-//            remove(fileName);
-//        }
-//        Set<String> conflictFiles = new HashSet<>();
-//        Set<String> bothChangedFiles = new HashSet<>(changeFilesToCurrentBranch);
-//        bothChangedFiles.retainAll(changeFilesToGivenBranch);
-//        for (String fileName: bothChangedFiles) {
-//            if (!headCommit.nameIDMap.get(fileName).equals(givenBranchHeadCommit.nameIDMap.get(fileName))) {
-//                conflictFiles.add(fileName);
-//            }
-//        }
-//        for (String fileName: changeFilesToCurrentBranch) {
-//            if (!givenBranchHeadCommit.nameIDMap.containsKey(fileName)) {
-//                conflictFiles.add(fileName);
-//            }
-//        }
-//        for (String fileName: changeFilesToGivenBranch) {
-//            if (!headCommit.nameIDMap.containsKey(fileName)) {
-//                conflictFiles.add(fileName);
-//            }
-//        }
-//        Set<String> filesInGivenBranchNoExistInSplitPoint = new HashSet<>(filesInGivenBranch);
-//        filesInGivenBranchNoExistInSplitPoint.removeAll(filesInSplitPoint);
-//        Set<String> filesInCurrentBranchNoExistInSplitPoint = new HashSet<>(filesInCurrentBranch);
-//        filesInCurrentBranchNoExistInSplitPoint.removeAll(filesInSplitPoint);
-//        for (String fileName: filesInCurrentBranchNoExistInSplitPoint) {
-//            if (filesInGivenBranchNoExistInSplitPoint.contains(fileName) && !givenBranchHeadCommit.nameIDMap.get(fileName).equals(headCommit.nameIDMap.get(fileName))) {
-//                conflictFiles.add(fileName);
-//            }
-//        }
-//    }
-//    private static Set<String> changeFilesBetweenCommit(Commit commitChangeFrom, Commit commitChangeTo, Set<String> filesInCommit) {
-//        Set<String> changeFiles = new HashSet<>();
-//        for (String fileName: filesInCommit) {
-//            if (commitChangeTo.nameIDMap.containsKey(fileName) && !commitChangeFrom.nameIDMap.get(fileName).equals(commitChangeTo.nameIDMap.get(fileName))) {
-//                changeFiles.add(fileName);
-//            }
-//        }
-//        return changeFiles;
-//    }
     /** get the split point commitID */
     private static String getSplitPointID(String givenBranchHeadCommitID, String headCommitID) {
         HashSet<String> commitIDSet = new HashSet<>();

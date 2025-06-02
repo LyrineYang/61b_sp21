@@ -419,7 +419,7 @@ public class Repository {
             System.exit(0);
         }
         File rmBranchFile = join(BRANCHES_DIR, rmBranchName);
-        restrictedDelete(rmBranchFile);
+        rmBranchFile.delete();
     }
 
     public static void reset(String resetCommitID) {

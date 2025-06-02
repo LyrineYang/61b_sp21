@@ -322,18 +322,18 @@ public class Repository {
     }
     private static void checkOutBranch(String givenBranchName) {
         File givenBranchFile = join(BRANCHES_DIR, givenBranchName);
-        Commit givenHeadCommit = getBranchHeadCommit(givenBranchName);
         if (!givenBranchFile.exists()) {
             System.out.println("No such branch exists.");
             return;
         } else if (givenBranchName.equals(readContentsAsString(HEAD_FILE))) {
             System.out.println("No need to checkout the current branch.");
             return;
-        } else if (!getUntrackedFileSet().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileSet(), givenHeadCommit.nameIDMap)) {
+        }
+        Commit givenHeadCommit = getBranchHeadCommit(givenBranchName);
+        if (!getUntrackedFileSet().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileSet(), givenHeadCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
-
         checkOutFilesInCommit(givenHeadCommit);
         /* delete the file be tracked in headCommit but not tracked in given headCommit */
         for (String fileName: getBranchHeadCommit(readContentsAsString(HEAD_FILE)).nameIDMap.keySet()) {
@@ -403,16 +403,18 @@ public class Repository {
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
         writeContents(newBranch, sha1(serialize(headCommit)));
     }
+
     public static void rmBranch(String rmBranchName) {
-        File rmBranchFile = join(BRANCHES_DIR, rmBranchName);
-        if (!rmBranchFile.exists()) {
+        List<String> branchFileName = plainFilenamesIn(BRANCHES_DIR);
+        if (!branchFileName.contains(rmBranchName)) {
             System.out.println("A branch with that name does not exist.");
-            return;
+            System.exit(0);
         }
         if (rmBranchName.equals(readContentsAsString(HEAD_FILE))) {
             System.out.println("Cannot remove the current branch.");
-            return;
+            System.exit(0);
         }
+        File rmBranchFile = join(BRANCHES_DIR, rmBranchName);
         restrictedDelete(rmBranchFile);
     }
 
@@ -471,7 +473,6 @@ public class Repository {
             System.out.println("Current branch fast-forwarded.");
             return;
         }
-        boolean conflictHappened = false;
         TreeMap<String, String> splitPointMap =  splitPoint.nameIDMap;
         TreeMap<String, String> headCommitMap = headCommit.nameIDMap;
         TreeMap<String, String> givenHeadCommitMap = givenBranchHeadCommit.nameIDMap;
@@ -519,13 +520,32 @@ public class Repository {
                 if (!headCommitFileID.equals(splitPointFileID) && !givenHeadCommitFileID.equals(splitPointFileID) && !headCommitFileID.equals(givenHeadCommitFileID)) {
                     conflictFiles.add(fileName);
                 }
-
             }
-
-
         }
+        if (!conflictFiles.isEmpty()) {
+            System.out.println("Encountered a merge conflict.");
+        }
+        for (String fileName: conflictFiles) {
+            conflictProcess(fileName, givenBranchName);
+        }
+        commit(String.format("Merged %s into %s.", givenBranchName, readContentsAsString(HEAD_FILE)), givenBranchHeadCommitID);
     }
 
+    private static void conflictProcess(String fileName, String givenBranchName) {
+        File conflictFile = join(CWD, fileName);
+        if (!conflictFile.exists()) {
+            try {
+                conflictFile.createNewFile();
+            } catch (IOException excp) {
+                throw new RuntimeException(excp);
+            }
+        }
+        Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
+        String headCommitBlobID = headCommit.nameIDMap.get(fileName);
+        Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
+        String givenCommitBlobID = givenBranchHeadCommit.nameIDMap.get(fileName);
+        writeContents(conflictFile, "<<<<<<< HEAD\n", readContentsAsString(join(BLOBS_DIR, headCommitBlobID)), "=======\n", readContentsAsString(join(BLOBS_DIR, givenCommitBlobID)), ">>>>>>>\n");
+    }
 
     /** get the split point commitID */
     private static String getSplitPointID(String givenBranchHeadCommitID, String headCommitID) {

@@ -405,6 +405,10 @@ public class Repository {
     }
 
     public static void rmBranch(String rmBranchName) {
+        if (!GITLET_DIR.exists()) {
+            System.out.println("Not in an initialized Gitlet directory.");
+            System.exit(0);
+        }
         List<String> branchFileName = plainFilenamesIn(BRANCHES_DIR);
         if (!branchFileName.contains(rmBranchName)) {
             System.out.println("A branch with that name does not exist.");

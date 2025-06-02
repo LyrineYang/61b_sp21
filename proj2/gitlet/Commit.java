@@ -2,6 +2,7 @@ package gitlet;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.TreeMap;
 
 
 /** Represents a gitlet commit object.
@@ -23,7 +24,7 @@ public class Commit implements Serializable {
     public String commitMessage;
     public String timeStamp;
     public String secondParentID;
-    public HashMap<String, String> nameIDMap;
+    public TreeMap<String, String> nameIDMap;
     public Commit(String p, String c, String t) {
         this(p, c, t, null);
     }
@@ -32,7 +33,7 @@ public class Commit implements Serializable {
         commitMessage = c;
         timeStamp = t;
         this.secondParentID = secondParentID;
-        this.nameIDMap = new HashMap<>();
+        this.nameIDMap = new TreeMap<>();
     }
 
 }

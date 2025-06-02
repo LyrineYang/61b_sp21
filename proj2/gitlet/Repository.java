@@ -141,7 +141,7 @@ public class Repository {
         Commit newCommit = new Commit(sha1(serialize(headCommit)), commitMessage, getTimeStampString(), secondParentCommitID);
 
         /* load the headCommit map and put the staging area: the stagingAreaMap */
-        newCommit.nameIDMap = new HashMap<>(headCommit.nameIDMap);
+        newCommit.nameIDMap = new TreeMap<>(headCommit.nameIDMap);
         for (HashMap.Entry<String, String> entry : stagingAreaMap.entrySet()) {
             String fileName = entry.getKey();
             String blobID = entry.getValue();
@@ -358,7 +358,7 @@ public class Repository {
     }
 
     /* check if the untrackedFile is tracked in given head commit map and will be overWritten*/
-    private static boolean checkUntrackedFileOverwritten(Set<String> untrackedFile, HashMap<String, String> Map) {
+    private static boolean checkUntrackedFileOverwritten(Set<String> untrackedFile, TreeMap<String, String> Map) {
         for (String fileName: untrackedFile) {
             if (Map.containsKey(fileName)) {
                 return true;
@@ -472,83 +472,61 @@ public class Repository {
             return;
         }
         boolean conflictHappened = false;
-        HashMap<String, String> splitPointMap =  splitPoint.nameIDMap;
-        HashMap<String, String> headCommitMap = headCommit.nameIDMap;
-        HashMap<String, String> givenHeadCommitMap = givenBranchHeadCommit.nameIDMap;
+        TreeMap<String, String> splitPointMap =  splitPoint.nameIDMap;
+        TreeMap<String, String> headCommitMap = headCommit.nameIDMap;
+        TreeMap<String, String> givenHeadCommitMap = givenBranchHeadCommit.nameIDMap;
         Set<String> allFiles = new HashSet<>(splitPointMap.keySet());
         allFiles.addAll(headCommitMap.keySet());
         allFiles.addAll(givenHeadCommitMap.keySet());
         Set<String> conflictFiles = new HashSet<>();
         for (String fileName: allFiles) {
-            if (existInCommitMap(fileName, splitPointMap) && existInCommitMap(fileName, headCommitMap) && existInCommitMap(fileName, givenHeadCommitMap) && changedFromCommit(fileName, splitPointMap, givenHeadCommitMap) && !changedFromCommit(fileName, splitPointMap, headCommitMap)) {
-                checkOutAndStage(fileName, givenHeadCommitMap, stagingArea);
-            } else if (existInCommitMap(fileName, splitPointMap) && existInCommitMap(fileName, headCommitMap) && existInCommitMap(fileName, givenHeadCommitMap) && !changedFromCommit(fileName, splitPointMap, givenHeadCommitMap) && changedFromCommit(fileName, splitPointMap, headCommitMap)) {
-                continue;
-            } else if (existInCommitMap(fileName, headCommitMap) && existInCommitMap(fileName, givenHeadCommitMap) && !changedFromCommit(fileName, headCommitMap, givenHeadCommitMap)) {
-                continue;
-            } else if (existInCommitMap(fileName, headCommitMap) && !existInCommitMap(fileName, splitPointMap) && !existInCommitMap(fileName, givenHeadCommitMap)) {
-                continue;
-            } else if (existInCommitMap(fileName, givenHeadCommitMap) && !existInCommitMap(fileName, splitPointMap) && !existInCommitMap(fileName, headCommitMap)) {
-                checkOutAndStage(fileName, givenHeadCommitMap, stagingArea);
-            } else if (existInCommitMap(fileName, splitPointMap) && existInCommitMap(fileName, headCommitMap) && !existInCommitMap(fileName, givenHeadCommitMap) && !changedFromCommit(fileName, splitPointMap, headCommitMap)) {
-                remove(fileName);
-            } else if (existInCommitMap(fileName, splitPointMap) && !existInCommitMap(fileName, headCommitMap) && existInCommitMap(fileName, givenHeadCommitMap) && !changedFromCommit(fileName, splitPointMap, givenHeadCommitMap)) {
-                continue;
-            } else if (existInCommitMap(fileName, headCommitMap) && existInCommitMap(fileName, givenHeadCommitMap) && changedFromCommit(fileName, headCommitMap, givenHeadCommitMap)) {
-                conflictHappened = true;
+            String splitPointFileID = splitPointMap.get(fileName);
+            String headCommitFileID = headCommitMap.get(fileName);
+            String givenHeadCommitFileID = givenHeadCommitMap.get(fileName);
+            if (splitPointFileID != null && headCommitFileID != null && givenHeadCommitFileID != null) {
+                if (splitPointFileID.equals(headCommitFileID) && !splitPointFileID.equals(givenHeadCommitFileID)) {
+                    checkOutFile(fileName, givenHeadCommitFileID);
+                    stagingArea.put(fileName, givenHeadCommitFileID);
+                } else if (splitPointFileID.equals(givenBranchHeadCommitID) && !splitPointFileID.equals(headCommitFileID)) {
+                    continue;
+                }
+                if (!headCommitFileID.equals(givenHeadCommitFileID)) {
+                    conflictFiles.add(fileName);
+                }
+            }
+            if (headCommitFileID != null && !headCommitFileID.equals(splitPointFileID) && givenHeadCommitFileID == null) {
                 conflictFiles.add(fileName);
-            } else if (existInCommitMap(fileName, headCommitMap) && !existInCommitMap(fileName, givenHeadCommitMap) && changedFromCommit(fileName, splitPointMap, headCommitMap)) {
-                conflictHappened = true;
-                conflictFiles.add(fileName);
-            } else if (!existInCommitMap(fileName, headCommitMap) && existInCommitMap(fileName, givenHeadCommitMap) && changedFromCommit(fileName, splitPointMap, givenHeadCommitMap)) {
-                conflictHappened = true;
+            } else if (givenHeadCommitFileID != null && !givenHeadCommitFileID.equals(splitPointFileID) && headCommitFileID == null) {
                 conflictFiles.add(fileName);
             }
-        }
-        for (String fileName: conflictFiles) {
-            File conflictFile = join(CWD, fileName);
-            String contentInCurrentBranch;
-            String contentInGivenBranch;
-            if (headCommitMap.containsKey(fileName)) {
-                String blobID = headCommitMap.get(fileName);
-                File blob = join(BLOBS_DIR, blobID);
-                contentInCurrentBranch = readContentsAsString(blob);
+
+            if (splitPointFileID == null) {
+                if (headCommitFileID == null && givenHeadCommitFileID != null) {
+                    checkOutFile(fileName, givenHeadCommitFileID);
+                    stagingArea.put(fileName, givenHeadCommitFileID);
+                } else if (headCommitFileID != null && givenHeadCommitFileID == null) {
+                    continue;
+                }
+                if (headCommitFileID != null && !headCommitFileID.equals(givenHeadCommitFileID)) {
+                    conflictFiles.add(fileName);
+                }
             } else {
-                contentInCurrentBranch = "";
+                if (headCommitFileID != null && headCommitFileID.equals(splitPointFileID) && givenHeadCommitFileID == null) {
+                    remove(fileName);
+                } else if (givenHeadCommitFileID != null && givenHeadCommitFileID.equals(splitPointFileID) && headCommitFileID == null) {
+                    continue;
+                }
+                if (!headCommitFileID.equals(splitPointFileID) && !givenHeadCommitFileID.equals(splitPointFileID) && !headCommitFileID.equals(givenHeadCommitFileID)) {
+                    conflictFiles.add(fileName);
+                }
+
             }
-            if (givenHeadCommitMap.containsKey(fileName)) {
-                String blobID = givenHeadCommitMap.get(fileName);
-                File blob = join(BLOBS_DIR, blobID);
-                contentInGivenBranch = readContentsAsString(blob);
-            } else {
-                contentInGivenBranch = "";
-            }
-            writeContents(conflictFile, "<<<<<<< HEAD", contentInCurrentBranch, "=======", contentInGivenBranch, ">>>>>>>");
-            byte[] blobContent = readContents(conflictFile);
-            Blob newBlob = new Blob(blobContent);
-            stagingArea.put(fileName, sha1(serialize(newBlob)));
+
 
         }
-        if (conflictHappened) {
-            System.out.println("Encountered a merge conflict.");
-        }
-        writeObject(INDEX_FILE, stagingArea);
-        String commitMessage = String.format("Merged %s into %s.", givenBranchName, readContentsAsString(HEAD_FILE));
-        commit(commitMessage, givenBranchHeadCommitID);
     }
 
-    private static void checkOutAndStage(String fileName, HashMap<String, String> givenHeadCommitMap, HashMap<String, String> stagingArea) {
-        String blobID = givenHeadCommitMap.get(fileName);
-        checkOutFile(fileName, blobID);
-        stagingArea.put(fileName, blobID);
-    }
 
-    private static boolean existInCommitMap(String fileName, HashMap<String, String> commitMap) {
-        return commitMap.containsKey(fileName) ;
-    }
-    private static boolean changedFromCommit(String fileName, HashMap<String, String> commitChangedFrom, HashMap<String, String> commitChangedTo) {
-        return !commitChangedFrom.get(fileName).equals(commitChangedTo.get(fileName));
-    }
     /** get the split point commitID */
     private static String getSplitPointID(String givenBranchHeadCommitID, String headCommitID) {
         HashSet<String> commitIDSet = new HashSet<>();

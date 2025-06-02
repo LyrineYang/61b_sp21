@@ -105,9 +105,17 @@ public class Repository {
         writeObject(INDEX_FILE, stagingArea);
     }
 
-    /** get commit object according its commitID */
+    /** get commit object according its commitID by go through commits directory(maybe shortened)  */
     private static Commit getCommitByID(String commitID) {
-        return readObject(join(COMMITS_DIR, commitID), Commit.class);
+        List<String> commitsIDList = plainFilenamesIn(COMMITS_DIR);;
+        for (String commitsID: commitsIDList) {
+            if (commitsID.startsWith(commitID)) {
+                File commitFile = join(COMMITS_DIR, commitsID);
+                Commit commit = readObject(commitFile, Commit.class);
+                return commit;
+            }
+        }
+        return null;
     }
 
     /** get the given branch head commit object */
@@ -269,53 +277,22 @@ public class Repository {
         System.out.println("=== " + "Modifications Not Staged For Commit" + " ===");
         System.out.println();
         System.out.println("=== " + "Untracked Files" + " ===");
-        List<String> untrackedFileList = getUntrackedFileList();
+        Set<String> untrackedFileList = getUntrackedFileSet();
         for (String fileName: untrackedFileList) {
             System.out.println(fileName);
         }
         System.out.println();
     }
-    private static String findFullCommitIDFromShort(String shortId) {
-    if (shortId == null || shortId.length() > UID_LENGTH) { // UID_LENGTH from Utils
-        return null; // Or invalid
-    }
-    if (shortId.length() == UID_LENGTH) { // Already a full ID
-        if (join(COMMITS_DIR, shortId).exists()) {
-            return shortId;
-        }
-        return null;
-    }
-
-    List<String> commitIds = plainFilenamesIn(COMMITS_DIR);
-    if (commitIds == null) {
-        return null;
-    }
-
-    String foundId = null;
-    int matchCount = 0;
-    for (String id : commitIds) {
-        if (id.startsWith(shortId)) {
-            matchCount++;
-            foundId = id;
-        }
-    }
-
-    if (matchCount == 1) {
-        return foundId;
-    } else if (matchCount > 1) {
-        // Handle ambiguous short ID - spec might say what to do, or just fail
-        // For now, returning null for "not found / ambiguous"
-        return null;
-    }
-    return null; // No match
-}
     public static void checkOut(String[] args) {
-        if (args.length == 3 && args[1].equals("--")) {
-            checkOutHeadCommit(args[2]);
+        if (args.length == 2) {
+            checkOutBranch(args[1]);
         } else if (args.length == 4 && args[2].equals("--")) {
             checkOutSpecialCommit(args[1], args[3]);
-        } else if (args.length == 2 ){
-            checkOutBranch(args[1]);
+        } else if (args.length == 3 && args[1].equals("--")){
+            checkOutHeadCommit(args[2]);
+        } else {
+            System.out.println("Incorrect operands.");
+            System.exit(0);
         }
     }
     private static void checkOutHeadCommit(String fileName) {
@@ -330,35 +307,29 @@ public class Repository {
 
 
     private static void checkOutSpecialCommit(String commitID, String fileName) {
-    String fullCommitID = findFullCommitIDFromShort(commitID); // ★ 新增调用
-    if (fullCommitID == null) {
-        System.out.println("No commit with that id exists.");
-        return;
+        /* handle the shortened ID search by method getCommitByID */
+        if (getCommitByID(commitID) == null) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
+        }
+        Commit specialCommit = getCommitByID(commitID);
+        if (!specialCommit.nameIDMap.containsKey(fileName)) {
+            System.out.println("File does not exist in that commit.");
+            System.exit(0);
+        }
+        String blobID = specialCommit.nameIDMap.get(fileName);
+        checkOutFile(fileName, blobID);
     }
-
-    File specialCommitFile = join(COMMITS_DIR, fullCommitID); // 使用完整ID
-    // if (!specialCommitFile.exists()) { // 这个检查其实被 findFullCommitIDFromShort 包含了
-    //     System.out.println("No commit with that id exists.");
-    //     return;
-    // }
-    Commit specialCommit = readObject(specialCommitFile, Commit.class);
-    if (!specialCommit.nameIDMap.containsKey(fileName)) {
-        System.out.println("File does not exist in that commit.");
-        return;
-    }
-    String blobID = specialCommit.nameIDMap.get(fileName);
-    checkOutFile(fileName, blobID);
-}
     private static void checkOutBranch(String givenBranchName) {
         File givenBranchFile = join(BRANCHES_DIR, givenBranchName);
-        Commit givenHeadCommit = readObject(join(COMMITS_DIR, readContentsAsString(givenBranchFile)), Commit.class);
+        Commit givenHeadCommit = getBranchHeadCommit(givenBranchName);
         if (!givenBranchFile.exists()) {
             System.out.println("No such branch exists.");
             return;
         } else if (givenBranchName.equals(readContentsAsString(HEAD_FILE))) {
             System.out.println("No need to checkout the current branch.");
             return;
-        } else if (!getUntrackedFileList().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileList(), givenHeadCommit.nameIDMap)) {
+        } else if (!getUntrackedFileSet().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileSet(), givenHeadCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
@@ -376,6 +347,7 @@ public class Repository {
         /* clean up the staging area */
         writeObject(INDEX_FILE, new HashMap<>());
     }
+
     /** check out all files in given Commit into CWD */
     private static void checkOutFilesInCommit(Commit givenCommit) {
         for (HashMap.Entry<String, String> entry : givenCommit.nameIDMap.entrySet()) {
@@ -386,7 +358,7 @@ public class Repository {
     }
 
     /* check if the untrackedFile is tracked in given head commit map and will be overWritten*/
-    private static boolean checkUntrackedFileOverwritten(List<String> untrackedFile, HashMap<String, String> Map) {
+    private static boolean checkUntrackedFileOverwritten(Set<String> untrackedFile, HashMap<String, String> Map) {
         for (String fileName: untrackedFile) {
             if (Map.containsKey(fileName)) {
                 return true;
@@ -400,21 +372,21 @@ public class Repository {
         writeContents(fileToCheckOut, checkOutBlob.getContent());
     }
     /* get the untracked file list in CWD */
-    private static List<String> getUntrackedFileList() {
+    private static HashSet<String> getUntrackedFileSet() {
         List<String> filesInCWD = plainFilenamesIn(CWD);
         if (filesInCWD == null) {
-            return new ArrayList<>();
+            return new HashSet<>();
         }
-        List<String> untrackedFileList = new ArrayList<>();
+        HashSet<String> untrackedFileSet = new HashSet<>();
         HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
         Set<String> stagingAreaKeys = stagingArea.keySet();
         Set<String> headCommitMaps = getBranchHeadCommit(readContentsAsString(HEAD_FILE)).nameIDMap.keySet();
         for (String fileName : filesInCWD) {
             if (!headCommitMaps.contains(fileName) && !stagingAreaKeys.contains(fileName)) {
-                untrackedFileList.add(fileName);
+                untrackedFileSet.add(fileName);
             }
         }
-        return untrackedFileList;
+        return untrackedFileSet;
     }
 
     public static void branch(String branchName) {
@@ -451,7 +423,7 @@ public class Repository {
             return;
         }
         Commit resetCommit = readObject(resetCommitFile, Commit.class);
-        if (!getUntrackedFileList().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileList(), resetCommit.nameIDMap)) {
+        if (!getUntrackedFileSet().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileSet(), resetCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
@@ -482,7 +454,7 @@ public class Repository {
         }
         Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        if (!getUntrackedFileList().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileList(), givenBranchHeadCommit.nameIDMap) && checkUntrackedFileOverwritten(getUntrackedFileList(), headCommit.nameIDMap)) {
+        if (!getUntrackedFileSet().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileSet(), givenBranchHeadCommit.nameIDMap) && checkUntrackedFileOverwritten(getUntrackedFileSet(), headCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }

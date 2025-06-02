@@ -21,7 +21,6 @@ public class Main {
         return true;
     }
     public static void main(String[] args) {
-        // TODO: what if args is empty?
         if (args.length == 0) {
             System.out.println("Please enter a command.");
             System.exit(0);
@@ -65,6 +64,9 @@ public class Main {
                 Repository.status();
                 break;
             case "checkout":
+                if (args.length == 1) {
+                        throw new GitletException("Incorrect operands.");
+                    }
                 Repository.checkOut(args);
                 break;
             case "branch":

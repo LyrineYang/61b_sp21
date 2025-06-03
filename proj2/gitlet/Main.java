@@ -1,6 +1,5 @@
 package gitlet;
 
-import static gitlet.Utils.join;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
  *  @author Lyrine Yang

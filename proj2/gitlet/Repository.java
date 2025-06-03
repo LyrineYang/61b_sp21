@@ -520,7 +520,7 @@ public class Repository {
                 stagingArea.put(fileName, gID);
             } else if (sIDExist && !gIDExist && Objects.equals(sID, hID)) {
                 File deleteFile = join(CWD, fileName);
-                restrictedDelete(deleteFile);
+                deleteFile.delete();
                 stagingArea.put(fileName, DELETE_MARKER);
             } else if (sIDExist && !hIDExist && Objects.equals(sID, gID)) {
                 continue;

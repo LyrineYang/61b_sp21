@@ -535,8 +535,9 @@ public class Repository {
                     + "delete it, or add and commit it first.");
             return;
         }
-        String givenBranchHeadCommitID = sha1(serialize(givenBranchHeadCommit));
-        String headCommitID = sha1(serialize(headCommit));
+        String givenBranchHeadCommitID = readContentsAsString(join(BRANCHES_DIR, givenBranchName));
+        String activeBranch = readContentsAsString(HEAD_FILE);
+        String headCommitID = readContentsAsString(join(BRANCHES_DIR, activeBranch));
         String splitPointID = getSplitPointID(givenBranchHeadCommitID, headCommitID);
         Commit splitPoint = getCommitByID(splitPointID);
         if (splitPointID.equals(givenBranchHeadCommitID)) {
@@ -635,21 +636,25 @@ public class Repository {
         allParentCommitID.retainAll(getAllParent(givenBranchHeadCommitID));
         String latestCommitID = null;
         String latestTimestamp = null;
-        for (String commitID: allParentCommitID) {
-            Commit commit = getCommitByID(commitID);
-            String currentTimeStamp = commit.getTimeStamp();
-            if (latestCommitID == null) {
-                latestCommitID = commitID;
-                latestTimestamp = currentTimeStamp;
-            } else {
-                if (parseTimeStamp(currentTimeStamp).
-                        after(parseTimeStamp(latestTimestamp))) {
-                    latestCommitID = commitID;
-                    latestTimestamp = currentTimeStamp;
+        List<String> lcaCandidates = new ArrayList<>();
+        for (String ca1 : allParentCommitID) {
+            boolean isLCA = true;
+            for (String ca2 : allParentCommitID) {
+                if (ca1.equals(ca2)) {
+                    continue;
+                }
+                Set<String> ancestorsOfCa2 = getAllParent(ca2);
+                ancestorsOfCa2.remove(ca2);
+                if (ancestorsOfCa2.contains(ca1)) {
+                    isLCA = false;
+                    break;
                 }
             }
+            if (isLCA) {
+                lcaCandidates.add(ca1);
+            }
         }
-        return latestCommitID;
+        return lcaCandidates.get(0);
 
     }
     private static Set<String> getAllParent(String givenHeadCommitID) {

@@ -555,9 +555,10 @@ public class Repository {
     private static void mergeDelete(String fileName, HashMap<String, String> stagingArea) {
         File deleteFile = join(CWD, fileName);
         if (deleteFile.exists()) {
-            restrictedDelete(deleteFile);
+            deleteFile.delete();
         }
         stagingArea.put(fileName, DELETE_MARKER);
+        writeObject(INDEX_FILE, stagingArea);
     }
 
     private static void mergeCheck(String fileName, String gID, HashMap<String, String> map) {

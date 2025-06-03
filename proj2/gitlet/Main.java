@@ -64,9 +64,6 @@ public class Main {
                 Repository.status();
                 break;
             case "checkout":
-                if (args.length == 1) {
-                        throw new GitletException("Incorrect operands.");
-                    }
                 Repository.checkOut(args);
                 break;
             case "branch":

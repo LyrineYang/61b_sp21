@@ -485,45 +485,30 @@ public class Repository {
         allFiles.addAll(givenHeadCommitMap.keySet());
         Set<String> conflictFiles = new HashSet<>();
         for (String fileName: allFiles) {
-            String splitPointFileID = splitPointMap.get(fileName);
-            String headCommitFileID = headCommitMap.get(fileName);
-            String givenHeadCommitFileID = givenHeadCommitMap.get(fileName);
-            if (splitPointFileID != null && headCommitFileID != null && givenHeadCommitFileID != null) {
-                if (splitPointFileID.equals(headCommitFileID) && !splitPointFileID.equals(givenHeadCommitFileID)) {
-                    checkOutFile(fileName, givenHeadCommitFileID);
-                    stagingArea.put(fileName, givenHeadCommitFileID);
-                } else if (splitPointFileID.equals(givenBranchHeadCommitID) && !splitPointFileID.equals(headCommitFileID)) {
-                    continue;
-                }
-                if (!headCommitFileID.equals(givenHeadCommitFileID)) {
-                    conflictFiles.add(fileName);
-                }
-            }
-            if (headCommitFileID != null && !headCommitFileID.equals(splitPointFileID) && givenHeadCommitFileID == null) {
-                conflictFiles.add(fileName);
-            } else if (givenHeadCommitFileID != null && !givenHeadCommitFileID.equals(splitPointFileID) && headCommitFileID == null) {
-                conflictFiles.add(fileName);
-            }
-
-            if (splitPointFileID == null) {
-                if (headCommitFileID == null && givenHeadCommitFileID != null) {
-                    checkOutFile(fileName, givenHeadCommitFileID);
-                    stagingArea.put(fileName, givenHeadCommitFileID);
-                } else if (headCommitFileID != null && givenHeadCommitFileID == null) {
-                    continue;
-                }
-                if (headCommitFileID != null && !headCommitFileID.equals(givenHeadCommitFileID)) {
-                    conflictFiles.add(fileName);
-                }
+            String sID = splitPointMap.get(fileName);
+            String hID = headCommitMap.get(fileName);
+            String gID = givenHeadCommitMap.get(fileName);
+            boolean sIDExist = (sID != null);
+            boolean hIDExist = (hID != null);
+            boolean gIDExist = (gID != null);
+            if (sIDExist && hIDExist && gIDExist && sID.equals(hID) && !sID.equals(gID)) {
+                checkOutFile(fileName, gID);
+                stagingArea.put(fileName, gID);
+            } else if (sIDExist && hIDExist && gIDExist && !sID.equals(hID) && sID.equals(gID)) {
+                continue;
+            } else if (Objects.equals(hID, gID)) {
+                continue;
+            } else if (!sIDExist && !gIDExist && hIDExist) {
+                continue;
+            } else if (!sIDExist && gIDExist && !hIDExist) {
+                checkOutFile(fileName, gID);
+                stagingArea.put(fileName, gID);
+            } else if (sIDExist && !gIDExist && Objects.equals(sID, hID)) {
+                remove(fileName);
+            } else if (sIDExist && !hIDExist && Objects.equals(sID, gID)) {
+                continue;
             } else {
-                if (headCommitFileID != null && headCommitFileID.equals(splitPointFileID) && givenHeadCommitFileID == null) {
-                    remove(fileName);
-                } else if (givenHeadCommitFileID != null && givenHeadCommitFileID.equals(splitPointFileID) && headCommitFileID == null) {
-                    continue;
-                }
-                if (!headCommitFileID.equals(splitPointFileID) && !givenHeadCommitFileID.equals(splitPointFileID) && !headCommitFileID.equals(givenHeadCommitFileID)) {
-                    conflictFiles.add(fileName);
-                }
+                conflictFiles.add(fileName);
             }
         }
         if (!conflictFiles.isEmpty()) {
@@ -532,8 +517,10 @@ public class Repository {
         for (String fileName: conflictFiles) {
             conflictProcess(fileName, givenBranchName);
         }
+        writeObject(INDEX_FILE, stagingArea);
         commit(String.format("Merged %s into %s.", givenBranchName, readContentsAsString(HEAD_FILE)), givenBranchHeadCommitID);
     }
+
 
     private static void conflictProcess(String fileName, String givenBranchName) {
         File conflictFile = join(CWD, fileName);

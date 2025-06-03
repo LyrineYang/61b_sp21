@@ -512,14 +512,15 @@ public class Repository {
                 conflictFiles.add(fileName);
             }
         }
+        writeObject(INDEX_FILE, stagingArea);
+        for (String fileName: conflictFiles) {
+            conflictProcess(fileName, givenBranchName);
+            add(fileName);
+        }
+        commit(String.format("Merged %s into %s.", givenBranchName, readContentsAsString(HEAD_FILE)), givenBranchHeadCommitID);
         if (!conflictFiles.isEmpty()) {
             System.out.println("Encountered a merge conflict.");
         }
-        for (String fileName: conflictFiles) {
-            conflictProcess(fileName, givenBranchName);
-        }
-        writeObject(INDEX_FILE, stagingArea);
-        commit(String.format("Merged %s into %s.", givenBranchName, readContentsAsString(HEAD_FILE)), givenBranchHeadCommitID);
     }
 
 

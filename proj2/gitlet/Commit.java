@@ -18,12 +18,12 @@ public class Commit implements Serializable {
      * variable is used. We've provided one example for `message`.
      */
 
-    public String parentID;
+    private final String parentID;
     /** The message of this Commit. */
-    public String commitMessage;
-    public String timeStamp;
-    public String secondParentID;
-    public TreeMap<String, String> nameIDMap;
+    private final String commitMessage;
+    private final String timeStamp;
+    private final String secondParentID;
+    private TreeMap<String, String> nameIDMap;
     public Commit(String p, String c, String t) {
         this(p, c, t, null);
     }
@@ -34,5 +34,24 @@ public class Commit implements Serializable {
         this.secondParentID = secondParentID;
         this.nameIDMap = new TreeMap<>();
     }
+    public String getParentID() {
+        return parentID;
+    }
+    public String getCommitMessage() {
+        return commitMessage;
+    }
+    public String getTimeStamp() {
+        return timeStamp;
+    }
 
+    public String getSecondParentID() {
+        return secondParentID;
+    }
+
+    public TreeMap<String, String> getNameIDMap() {
+        return nameIDMap;
+    }
+    public void loadParentCommitMap(Commit this, TreeMap<String, String> parentCommitMap) {
+        this.nameIDMap = new TreeMap<>(parentCommitMap);
+    }
 }

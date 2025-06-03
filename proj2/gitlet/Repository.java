@@ -99,7 +99,7 @@ public class Repository {
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
 
         /* check whether current working version of the file is identical to the version in the current commit */
-        if (headCommit.nameIDMap.containsKey(fileName) && headCommit.nameIDMap.get(fileName).equals(blobID)) {
+        if (headCommit.getNameIDMap().containsKey(fileName) && headCommit.getNameIDMap().get(fileName).equals(blobID)) {
             if (stagingArea.containsKey(fileName)) {
                 stagingArea.remove(fileName);
                 writeObject(INDEX_FILE, stagingArea);
@@ -153,15 +153,15 @@ public class Repository {
         Commit newCommit = new Commit(headCommitID, commitMessage, getTimeStampString(), secondParentCommitID);
 
         /* load the headCommit map and put the staging area: the stagingAreaMap */
-        newCommit.nameIDMap = new TreeMap<>(headCommit.nameIDMap);
+        newCommit.loadParentCommitMap(headCommit.getNameIDMap());
         for (HashMap.Entry<String, String> entry : stagingAreaMap.entrySet()) {
             String fileName = entry.getKey();
             String blobID = entry.getValue();
             /* if there are file need to delete, remove it from nameIDMap to cancel tracking of it */
             if (blobID.equals(DELETE_MARKER)) {
-                newCommit.nameIDMap.remove(fileName);
+                newCommit.getNameIDMap().remove(fileName);
             } else {
-                newCommit.nameIDMap.put(fileName, blobID);
+                newCommit.getNameIDMap().put(fileName, blobID);
             }
         }
 
@@ -191,7 +191,7 @@ public class Repository {
             stagingArea.remove(fileName);
             stagingAreaChanged = true;
         }
-        if (headCommit.nameIDMap.containsKey(fileName)) {
+        if (headCommit.getNameIDMap().containsKey(fileName)) {
             stagingArea.put(fileName, DELETE_MARKER);
             stagingAreaChanged = true;
             File cwdFileToRm = join(CWD, fileName);
@@ -210,7 +210,7 @@ public class Repository {
         logHelper(headCommit, sha1(serialize(headCommit)));
     }
     private static void logHelper(Commit currentCommit, String commitID) {
-        String parentCommitID = currentCommit.parentID;
+        String parentCommitID = currentCommit.getParentID();
         logPrintHelper(currentCommit, commitID);
         if (parentCommitID == null) {
             return;
@@ -222,13 +222,13 @@ public class Repository {
     private static void logPrintHelper(Commit currentCommit, String commitID) {
         System.out.println("===");
         System.out.println("commit " + commitID);
-        if (currentCommit.secondParentID != null) {
-            String parentID = currentCommit.parentID.substring(0, 7);
-            String secondParentID = currentCommit.secondParentID.substring(0, 7);
+        if (currentCommit.getSecondParentID() != null) {
+            String parentID = currentCommit.getParentID().substring(0, 7);
+            String secondParentID = currentCommit.getSecondParentID().substring(0, 7);
             System.out.println("Merge: " + parentID + " " + secondParentID);
         }
-        System.out.println("Date: " + currentCommit.timeStamp);
-        System.out.println(currentCommit.commitMessage);
+        System.out.println("Date: " + currentCommit.getTimeStamp());
+        System.out.println(currentCommit.getCommitMessage());
         System.out.println();
     }
 
@@ -248,7 +248,7 @@ public class Repository {
         if (commitIDList != null) {
             for (String commitID : commitIDList) {
                 Commit currentCommit = readObject(join(COMMITS_DIR, commitID), Commit.class);
-                if (currentCommit.commitMessage.equals(commitMessageToFind)) {
+                if (currentCommit.getCommitMessage().equals(commitMessageToFind)) {
                     System.out.println(commitID);
                     commitMessageExist = true;
                 }
@@ -311,11 +311,11 @@ public class Repository {
     }
     private static void checkOutHeadCommit(String fileName) {
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        if (!headCommit.nameIDMap.containsKey(fileName)) {
+        if (!headCommit.getNameIDMap().containsKey(fileName)) {
             System.out.println("File does not exist in that commit.");
             return;
         }
-        String blobID = headCommit.nameIDMap.get(fileName);
+        String blobID = headCommit.getNameIDMap().get(fileName);
         checkOutFile(fileName, blobID);
     }
 
@@ -327,11 +327,11 @@ public class Repository {
             System.exit(0);
         }
         Commit specialCommit = getCommitByID(commitID);
-        if (!specialCommit.nameIDMap.containsKey(fileName)) {
+        if (!specialCommit.getNameIDMap().containsKey(fileName)) {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         }
-        String blobID = specialCommit.nameIDMap.get(fileName);
+        String blobID = specialCommit.getNameIDMap().get(fileName);
         checkOutFile(fileName, blobID);
     }
     private static void checkOutBranch(String givenBranchName) {
@@ -345,14 +345,14 @@ public class Repository {
         }
         Commit givenHeadCommit = getBranchHeadCommit(givenBranchName);
         Set<String> untrackedFile = getUntrackedFile();
-        if (!untrackedFile.isEmpty() && untrackFileOverwritten(untrackedFile, givenHeadCommit.nameIDMap)) {
+        if (!untrackedFile.isEmpty() && untrackFileOverwritten(untrackedFile, givenHeadCommit.getNameIDMap())) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
         checkOutFilesInCommit(givenHeadCommit);
         /* delete the file be tracked in headCommit but not tracked in given headCommit */
-        for (String fileName: getBranchHeadCommit(readContentsAsString(HEAD_FILE)).nameIDMap.keySet()) {
-            if (!givenHeadCommit.nameIDMap.containsKey(fileName)) {
+        for (String fileName: getBranchHeadCommit(readContentsAsString(HEAD_FILE)).getNameIDMap().keySet()) {
+            if (!givenHeadCommit.getNameIDMap().containsKey(fileName)) {
                 restrictedDelete(join(CWD, fileName));
             }
         }
@@ -365,7 +365,7 @@ public class Repository {
 
     /** check out all files in given Commit into CWD */
     private static void checkOutFilesInCommit(Commit givenCommit) {
-        for (HashMap.Entry<String, String> entry : givenCommit.nameIDMap.entrySet()) {
+        for (HashMap.Entry<String, String> entry : givenCommit.getNameIDMap().entrySet()) {
             String fileName = entry.getKey();
             String blobID = entry.getValue();
             checkOutFile(fileName, blobID);
@@ -395,7 +395,7 @@ public class Repository {
         HashSet<String> untrackedFileSet = new HashSet<>();
         HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
         Set<String> stagingAreaKeys = stagingArea.keySet();
-        Set<String> headCommitMaps = getBranchHeadCommit(readContentsAsString(HEAD_FILE)).nameIDMap.keySet();
+        Set<String> headCommitMaps = getBranchHeadCommit(readContentsAsString(HEAD_FILE)).getNameIDMap().keySet();
         for (String fileName : filesInCWD) {
             if (!headCommitMaps.contains(fileName) && !stagingAreaKeys.contains(fileName)) {
                 untrackedFileSet.add(fileName);
@@ -445,14 +445,14 @@ public class Repository {
         }
         Commit resetCommit = readObject(resetCommitFile, Commit.class);
         Set<String> untrackedFile = getUntrackedFile();
-        if (!untrackedFile.isEmpty() && untrackFileOverwritten(untrackedFile, resetCommit.nameIDMap)) {
+        if (!untrackedFile.isEmpty() && untrackFileOverwritten(untrackedFile, resetCommit.getNameIDMap())) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
         checkOutFilesInCommit(resetCommit);
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        for (String fileName: headCommit.nameIDMap.keySet()) {
-            if (!resetCommit.nameIDMap.containsKey(fileName)) {
+        for (String fileName: headCommit.getNameIDMap().keySet()) {
+            if (!resetCommit.getNameIDMap().containsKey(fileName)) {
                 restrictedDelete(join(CWD, fileName));
             }
         }
@@ -477,7 +477,7 @@ public class Repository {
         Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
         Set<String> untrackedFile = getUntrackedFile();
-        if (!untrackedFile.isEmpty() && untrackFileOverwritten(untrackedFile, givenBranchHeadCommit.nameIDMap)) {
+        if (!untrackedFile.isEmpty() && untrackFileOverwritten(untrackedFile, givenBranchHeadCommit.getNameIDMap())) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
@@ -494,9 +494,9 @@ public class Repository {
             System.out.println("Current branch fast-forwarded.");
             return;
         }
-        TreeMap<String, String> splitPointMap =  splitPoint.nameIDMap;
-        TreeMap<String, String> headCommitMap = headCommit.nameIDMap;
-        TreeMap<String, String> givenHeadCommitMap = givenBranchHeadCommit.nameIDMap;
+        TreeMap<String, String> splitPointMap = splitPoint.getNameIDMap();
+        TreeMap<String, String> headCommitMap = headCommit.getNameIDMap();
+        TreeMap<String, String> givenHeadCommitMap = givenBranchHeadCommit.getNameIDMap();
         Set<String> allFiles = new HashSet<>(splitPointMap.keySet());
         allFiles.addAll(headCommitMap.keySet());
         allFiles.addAll(givenHeadCommitMap.keySet());
@@ -551,9 +551,9 @@ public class Repository {
             }
         }
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        String headCommitBlobID = headCommit.nameIDMap.get(fileName);
+        String headCommitBlobID = headCommit.getNameIDMap().get(fileName);
         Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
-        String givenCommitBlobID = givenBranchHeadCommit.nameIDMap.get(fileName);
+        String givenCommitBlobID = givenBranchHeadCommit.getNameIDMap().get(fileName);
         String headBlobContent = "";
         if (headCommitBlobID != null) {
             Blob headBlob = readObject(join(BLOBS_DIR, headCommitBlobID), Blob.class);
@@ -573,18 +573,18 @@ public class Repository {
         commitIDSet.add(headCommitID);
         Commit headCommit = getCommitByID(headCommitID);
         Commit givenBranchHeadCommit = getCommitByID(givenBranchHeadCommitID);
-        while (headCommit.parentID != null) {
-            commitIDSet.add(headCommit.parentID);
-            headCommit = getCommitByID(headCommit.parentID);
+        while (headCommit.getParentID() != null) {
+            commitIDSet.add(headCommit.getParentID());
+            headCommit = getCommitByID(headCommit.getParentID());
         }
         if (commitIDSet.contains(givenBranchHeadCommitID)) {
             return givenBranchHeadCommitID;
         }
-        while (givenBranchHeadCommit.parentID != null) {
-            if (commitIDSet.contains(givenBranchHeadCommit.parentID)) {
-                return givenBranchHeadCommit.parentID;
+        while (givenBranchHeadCommit.getParentID() != null) {
+            if (commitIDSet.contains(givenBranchHeadCommit.getParentID())) {
+                return givenBranchHeadCommit.getParentID();
             }
-            givenBranchHeadCommit = getCommitByID(givenBranchHeadCommit.parentID);
+            givenBranchHeadCommit = getCommitByID(givenBranchHeadCommit.getParentID());
         }
         return null;
     }

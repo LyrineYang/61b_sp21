@@ -4,7 +4,10 @@ import static gitlet.Utils.join;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
  *  @author Lyrine Yang
+ *  Thanks to my collaborator [Yuteng Huang](https://github.com/isHarryh) who leads me to be a better programmer.
+ *  Thanks to Jiang Zhuo and bzWang who brings me a lot.
  */
+
 public class Main {
 
     /**

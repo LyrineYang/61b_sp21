@@ -9,6 +9,17 @@ import java.util.*;
 /** Represents a gitlet repository. Includes file path in gitlet directory and implements of gitlet commands by
  *  store information in files.
  *  does at a high level.
+ *  .gitlet/
+ *        - objects/
+ *            - commits/
+ *                - ...(files of commits)
+ *            - blobs/
+ *                - ...(files of blobs)
+ *        - branches/
+ *            - master
+ *            - ...(other branches)
+ *        - HEAD
+ *        - index/
  *
  *  @author Lyrine Yang
  */
@@ -212,7 +223,8 @@ public class Repository {
         System.out.println("===");
         System.out.println("commit " + commitID);
         if (currentCommit.secondParentID != null) {
-            System.out.println("Merge: " + currentCommit.parentID.substring(0, 7) + " " + currentCommit.secondParentID.substring(0, 7));
+            String mergeMessage = "Merge: " + currentCommit.parentID.substring(0, 7) + " " + currentCommit.secondParentID.substring(0, 7);
+            System.out.println(mergeMessage);
         }
         System.out.println("Date: " + currentCommit.timeStamp);
         System.out.println(currentCommit.commitMessage);
@@ -278,7 +290,7 @@ public class Repository {
         System.out.println("=== " + "Modifications Not Staged For Commit" + " ===");
         System.out.println();
         System.out.println("=== " + "Untracked Files" + " ===");
-        Set<String> untrackedFileList = getUntrackedFileSet();
+        Set<String> untrackedFileList = getUntrackedFile();
         for (String fileName: untrackedFileList) {
             System.out.println(fileName);
         }
@@ -331,7 +343,8 @@ public class Repository {
             return;
         }
         Commit givenHeadCommit = getBranchHeadCommit(givenBranchName);
-        if (!getUntrackedFileSet().isEmpty() && untrackedFileOverwritten(getUntrackedFileSet(), givenHeadCommit.nameIDMap)) {
+        Set<String> untrackedFile = getUntrackedFile();
+        if (!untrackedFile.isEmpty() && untrackFileOverwritten(untrackedFile, givenHeadCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
@@ -359,7 +372,7 @@ public class Repository {
     }
 
     /* check if the untrackedFile is tracked in given head commit map and will be overWritten*/
-    private static boolean untrackedFileOverwritten(Set<String> untrackedFile, TreeMap<String, String> commitMap) {
+    private static boolean untrackFileOverwritten(Set<String> untrackedFile, TreeMap<String, String> commitMap) {
         for (String fileName: untrackedFile) {
             if (commitMap.containsKey(fileName)) {
                 return true;
@@ -373,7 +386,7 @@ public class Repository {
         writeContents(fileToCheckOut, checkOutBlob.getContent());
     }
     /* get the untracked file list in CWD */
-    private static HashSet<String> getUntrackedFileSet() {
+    private static HashSet<String> getUntrackedFile() {
         List<String> filesInCWD = plainFilenamesIn(CWD);
         if (filesInCWD == null) {
             return new HashSet<>();
@@ -430,7 +443,8 @@ public class Repository {
             return;
         }
         Commit resetCommit = readObject(resetCommitFile, Commit.class);
-        if (!getUntrackedFileSet().isEmpty() && untrackedFileOverwritten(getUntrackedFileSet(), resetCommit.nameIDMap)) {
+        Set<String> untrackedFile = getUntrackedFile();
+        if (!untrackedFile.isEmpty() && untrackFileOverwritten(untrackedFile, resetCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
@@ -461,7 +475,8 @@ public class Repository {
         }
         Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        if (!getUntrackedFileSet().isEmpty() && untrackedFileOverwritten(getUntrackedFileSet(), givenBranchHeadCommit.nameIDMap)) {
+        Set<String> untrackedFile = getUntrackedFile();
+        if (!untrackedFile.isEmpty() && untrackFileOverwritten(untrackedFile, givenBranchHeadCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
@@ -496,18 +511,15 @@ public class Repository {
                 checkOutFile(fileName, gID);
                 stagingArea.put(fileName, gID);
             } else if (sIDExist && hIDExist && gIDExist && !sID.equals(hID) && sID.equals(gID)) {
-                continue;
             } else if (Objects.equals(hID, gID)) {
-                continue;
             } else if (!sIDExist && !gIDExist && hIDExist) {
-                continue;
             } else if (!sIDExist && gIDExist && !hIDExist) {
                 checkOutFile(fileName, gID);
                 stagingArea.put(fileName, gID);
             } else if (sIDExist && !gIDExist && Objects.equals(sID, hID)) {
                 remove(fileName);
+                stagingArea.put(fileName, DELETE_MARKER);
             } else if (sIDExist && !hIDExist && Objects.equals(sID, gID)) {
-                continue;
             } else {
                 conflictFiles.add(fileName);
             }
@@ -517,7 +529,8 @@ public class Repository {
             conflictProcess(fileName, givenBranchName);
             add(fileName);
         }
-        commit(String.format("Merged %s into %s.", givenBranchName, readContentsAsString(HEAD_FILE)), givenBranchHeadCommitID);
+        String mergeMessage = String.format("Merged %s into %s.", givenBranchName, readContentsAsString(HEAD_FILE));
+        commit(mergeMessage, givenBranchHeadCommitID);
         if (!conflictFiles.isEmpty()) {
             System.out.println("Encountered a merge conflict.");
         }

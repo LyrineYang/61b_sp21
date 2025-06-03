@@ -1,5 +1,6 @@
 package gitlet;
 
+
 import static gitlet.Utils.*;
 import java.io.File;
 import java.io.IOException;
@@ -553,9 +554,9 @@ public class Repository {
 
     private static void mergeDelete(String fileName, HashMap<String, String> stagingArea) {
         File deleteFile = join(CWD, fileName);
-        restrictedDelete(deleteFile);
-        deleteFile.delete();
-        remove(fileName);
+        if (deleteFile.exists()) {
+            restrictedDelete(deleteFile);
+        }
         stagingArea.put(fileName, DELETE_MARKER);
     }
 

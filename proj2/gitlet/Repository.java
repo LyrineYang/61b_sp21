@@ -566,13 +566,6 @@ public class Repository {
 
     private static void conflictProcess(String fileName, String givenBranchName) {
         File conflictFile = join(CWD, fileName);
-        if (!conflictFile.exists()) {
-            try {
-                conflictFile.createNewFile();
-            } catch (IOException excp) {
-                throw new RuntimeException(excp);
-            }
-        }
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
         String headCommitBlobID = headCommit.getNameIDMap().get(fileName);
         Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);

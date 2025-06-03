@@ -443,8 +443,8 @@ public class Repository {
         HashSet<String> untrackedFileSet = new HashSet<>();
         HashMap<String, String> stagingArea = readObject(INDEX_FILE, HashMap.class);
         Set<String> stagingAreaKeys = stagingArea.keySet();
-        Set<String> headCommitMaps = getBranchHeadCommit
-                (readContentsAsString(HEAD_FILE)).getNameIDMap().keySet();
+        Set<String> headCommitMaps = getBranchHeadCommit(readContentsAsString(HEAD_FILE)).
+                getNameIDMap().keySet();
         for (String fileName : filesInCWD) {
             if (!headCommitMaps.contains(fileName) && !stagingAreaKeys.contains(fileName)) {
                 untrackedFileSet.add(fileName);
@@ -658,8 +658,9 @@ public class Repository {
         dfsGetAllParent(givenHeadCommitID, visited, allParentSet);
         return allParentSet;
     }
-    private static void dfsGetAllParent
-            (String givenCommitID, Set<String> visited, Set<String> allParentSet) {
+    private static void dfsGetAllParent(String givenCommitID,
+                                        Set<String> visited,
+                                        Set<String> allParentSet) {
         if (givenCommitID == null || visited.contains(givenCommitID)) {
             return;
         }

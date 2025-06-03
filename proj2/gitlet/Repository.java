@@ -4,6 +4,7 @@ package gitlet;
 import static gitlet.Utils.*;
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -205,6 +206,15 @@ public class Repository {
         Date timeStamp = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
         return formatter.format(timeStamp);
+    }
+
+    private static Date parseTimeStamp(String timeStampString) {
+        SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
+        try {
+            return formatter.parse(timeStampString);
+        } catch (ParseException e) {
+            return null;
+        }
     }
 
     public static void remove(String fileName) {
@@ -620,53 +630,48 @@ public class Repository {
                 ">>>>>>>\n");
     }
 
-    /**
-     * get the split point commitID
-     */
     private static String getSplitPointID(String givenBranchHeadCommitID, String headCommitID) {
-        HashSet<String> headHistory = new HashSet<>();
-        Queue<String> queue = new LinkedList<>();
-        queue.add(headCommitID);
-
-        while (!queue.isEmpty()) {
-            String currentID = queue.poll();
-            if (headHistory.contains(currentID)) {
-                continue;
-            }
-            headHistory.add(currentID);
-            Commit current = getCommitByID(currentID);
-            if (current.getParentID() != null) {
-                queue.add(current.getParentID());
-            }
-
-            if (current.getSecondParentID() != null) {
-                queue.add(current.getSecondParentID());
-            }
-        }
-
-        queue.clear();
-        queue.add(givenBranchHeadCommitID);
-        HashSet<String> visited = new HashSet<>();
-
-        while (!queue.isEmpty()) {
-            String currentID = queue.poll();
-            if (visited.contains(currentID)) {
-                continue;
-            }
-            visited.add(currentID);
-            if (headHistory.contains(currentID)) {
-                return currentID;
-            }
-
-            Commit current = getCommitByID(currentID);
-            if (current.getParentID() != null) {
-                queue.add(current.getParentID());
-            }
-            if (current.getSecondParentID() != null) {
-                queue.add(current.getSecondParentID());
+        Set<String> allParentCommitID = new HashSet<>(getAllParent(headCommitID));
+        allParentCommitID.retainAll(getAllParent(givenBranchHeadCommitID));
+        String latestCommitID = null;
+        String latestTimestamp = null;
+        for (String commitID: allParentCommitID) {
+            Commit commit = getCommitByID(commitID);
+            String currentTimeStamp = commit.getTimeStamp();
+            if (latestCommitID == null) {
+                latestCommitID = commitID;
+                latestTimestamp = currentTimeStamp;
+            } else {
+                if (parseTimeStamp(currentTimeStamp).
+                        after(parseTimeStamp(latestTimestamp))) {
+                    latestCommitID = commitID;
+                    latestTimestamp = currentTimeStamp;
+                }
             }
         }
+        return latestCommitID;
 
-        return null;  // 理论上不会发生，除非无共同祖先
+    }
+    private static Set<String> getAllParent(String givenHeadCommitID) {
+        Set<String> visited = new HashSet<>();
+        Set<String> allParentSet = new HashSet<>();
+        dfsGetAllParent(givenHeadCommitID, visited, allParentSet);
+        return allParentSet;
+    }
+    private static void dfsGetAllParent
+            (String givenCommitID, Set<String> visited, Set<String> allParentSet) {
+        if (givenCommitID == null || visited.contains(givenCommitID)) {
+            return;
+        }
+        visited.add(givenCommitID);
+        allParentSet.add(givenCommitID);
+        Commit givenCommit = getCommitByID(givenCommitID);
+        if (givenCommit == null) {
+            System.exit(0);
+        }
+        dfsGetAllParent(givenCommit.getParentID(), visited, allParentSet);
+        if (givenCommit.getSecondParentID() != null) {
+            dfsGetAllParent(givenCommit.getSecondParentID(), visited, allParentSet);
+        }
     }
 }

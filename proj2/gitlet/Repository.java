@@ -6,7 +6,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-/** Represents a gitlet repository. Includes file path in gitlet directory and implements of gitlet commands by
+/** Represents a gitlet repository.
+ * Includes file path in gitlet directory and implements of gitlet commands by
  *  store information in files.
  *  does at a high level.
  *  .gitlet/
@@ -511,6 +512,10 @@ public class Repository {
             if (sIDExist && hIDExist && gIDExist && sID.equals(hID) && !sID.equals(gID)) {
                 checkOutFile(fileName, gID);
                 stagingArea.put(fileName, gID);
+            } else if (sIDExist && !gIDExist && Objects.equals(sID, hID)) {
+                File deleteFile = join(CWD, fileName);
+                restrictedDelete(deleteFile);
+                stagingArea.put(fileName, DELETE_MARKER);
             } else if (sIDExist && hIDExist && gIDExist && !sID.equals(hID) && sID.equals(gID)) {
                 continue;
             } else if ((!sIDExist && !gIDExist && hIDExist) || Objects.equals(hID, gID)) {
@@ -518,11 +523,7 @@ public class Repository {
             } else if (!sIDExist && gIDExist && !hIDExist) {
                 checkOutFile(fileName, gID);
                 stagingArea.put(fileName, gID);
-            } else if (sIDExist && !gIDExist && Objects.equals(sID, hID)) {
-                File deleteFile = join(CWD, fileName);
-                deleteFile.delete();
-                stagingArea.put(fileName, DELETE_MARKER);
-            } else if (sIDExist && !hIDExist && Objects.equals(sID, gID)) {
+            }  else if (sIDExist && !hIDExist && Objects.equals(sID, gID)) {
                 continue;
             } else {
                 conflictFiles.add(fileName);

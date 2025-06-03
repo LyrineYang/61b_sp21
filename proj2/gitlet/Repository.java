@@ -525,7 +525,7 @@ public class Repository {
             boolean gIDExist = (gID != null);
             if ((sIDExist && hIDExist && gIDExist && sID.equals(hID) && !sID.equals(gID))
                     || !sIDExist && gIDExist && !hIDExist) {
-                mergeCheckOut(fileName, gID, stagingArea);
+                mergeCheck(fileName, gID, stagingArea);
             } else if (sIDExist && hIDExist && !gIDExist && Objects.equals(sID, hID)) {
                 mergeDelete(fileName, stagingArea);
             } else if (sIDExist && hIDExist && gIDExist
@@ -559,9 +559,9 @@ public class Repository {
         stagingArea.put(fileName, DELETE_MARKER);
     }
 
-    private static void mergeCheckOut(String fileName, String gID, HashMap<String, String> stagingArea) {
+    private static void mergeCheck(String fileName, String gID, HashMap<String, String> map) {
         checkOutFile(fileName, gID);
-        stagingArea.put(fileName, gID);
+        map.put(fileName, gID);
     }
 
     private static void conflictProcess(String fileName, String givenBranchName) {

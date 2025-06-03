@@ -107,7 +107,7 @@ public class Repository {
 
     /** get commit object according its commitID by go through commits directory(maybe shortened)  */
     private static Commit getCommitByID(String commitID) {
-        List<String> commitsIDList = plainFilenamesIn(COMMITS_DIR);;
+        List<String> commitsIDList = plainFilenamesIn(COMMITS_DIR);
         for (String commitsID: commitsIDList) {
             if (commitsID.startsWith(commitID)) {
                 File commitFile = join(COMMITS_DIR, commitsID);
@@ -138,7 +138,8 @@ public class Repository {
             return;
         }
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        Commit newCommit = new Commit(sha1(serialize(headCommit)), commitMessage, getTimeStampString(), secondParentCommitID);
+        String headCommitID = sha1(serialize(headCommit));
+        Commit newCommit = new Commit(headCommitID, commitMessage, getTimeStampString(), secondParentCommitID);
 
         /* load the headCommit map and put the staging area: the stagingAreaMap */
         newCommit.nameIDMap = new TreeMap<>(headCommit.nameIDMap);
@@ -182,9 +183,9 @@ public class Repository {
         if (headCommit.nameIDMap.containsKey(fileName)) {
             stagingArea.put(fileName, DELETE_MARKER);
             stagingAreaChanged = true;
-            File CWDFileToRm = join(CWD, fileName);
-            if (CWDFileToRm.exists()) {
-                restrictedDelete(CWDFileToRm);
+            File cwdFileToRm = join(CWD, fileName);
+            if (cwdFileToRm.exists()) {
+                restrictedDelete(cwdFileToRm);
             }
         }
         if (!stagingAreaChanged) {
@@ -288,7 +289,7 @@ public class Repository {
             checkOutBranch(args[1]);
         } else if (args.length == 4 && args[2].equals("--")) {
             checkOutSpecialCommit(args[1], args[3]);
-        } else if (args.length == 3 && args[1].equals("--")){
+        } else if (args.length == 3 && args[1].equals("--")) {
             checkOutHeadCommit(args[2]);
         } else {
             System.out.println("Incorrect operands.");
@@ -330,7 +331,7 @@ public class Repository {
             return;
         }
         Commit givenHeadCommit = getBranchHeadCommit(givenBranchName);
-        if (!getUntrackedFileSet().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileSet(), givenHeadCommit.nameIDMap)) {
+        if (!getUntrackedFileSet().isEmpty() && untrackedFileOverwritten(getUntrackedFileSet(), givenHeadCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
@@ -358,9 +359,9 @@ public class Repository {
     }
 
     /* check if the untrackedFile is tracked in given head commit map and will be overWritten*/
-    private static boolean checkUntrackedFileOverwritten(Set<String> untrackedFile, TreeMap<String, String> Map) {
+    private static boolean untrackedFileOverwritten(Set<String> untrackedFile, TreeMap<String, String> commitMap) {
         for (String fileName: untrackedFile) {
-            if (Map.containsKey(fileName)) {
+            if (commitMap.containsKey(fileName)) {
                 return true;
             }
         }
@@ -429,14 +430,14 @@ public class Repository {
             return;
         }
         Commit resetCommit = readObject(resetCommitFile, Commit.class);
-        if (!getUntrackedFileSet().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileSet(), resetCommit.nameIDMap)) {
+        if (!getUntrackedFileSet().isEmpty() && untrackedFileOverwritten(getUntrackedFileSet(), resetCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
         checkOutFilesInCommit(resetCommit);
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
         for (String fileName: headCommit.nameIDMap.keySet()) {
-            if(!resetCommit.nameIDMap.containsKey(fileName)) {
+            if (!resetCommit.nameIDMap.containsKey(fileName)) {
                 restrictedDelete(join(CWD, fileName));
             }
         }
@@ -460,7 +461,7 @@ public class Repository {
         }
         Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
         Commit headCommit = getBranchHeadCommit(readContentsAsString(HEAD_FILE));
-        if (!getUntrackedFileSet().isEmpty() && checkUntrackedFileOverwritten(getUntrackedFileSet(), givenBranchHeadCommit.nameIDMap) && checkUntrackedFileOverwritten(getUntrackedFileSet(), headCommit.nameIDMap)) {
+        if (!getUntrackedFileSet().isEmpty() && untrackedFileOverwritten(getUntrackedFileSet(), givenBranchHeadCommit.nameIDMap)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             return;
         }
@@ -535,7 +536,17 @@ public class Repository {
         String headCommitBlobID = headCommit.nameIDMap.get(fileName);
         Commit givenBranchHeadCommit = getBranchHeadCommit(givenBranchName);
         String givenCommitBlobID = givenBranchHeadCommit.nameIDMap.get(fileName);
-        writeContents(conflictFile, "<<<<<<< HEAD\n", readContentsAsString(join(BLOBS_DIR, headCommitBlobID)), "=======\n", readContentsAsString(join(BLOBS_DIR, givenCommitBlobID)), ">>>>>>>\n");
+        String headBlobContent = "";
+        if (headCommitBlobID != null) {
+            Blob headBlob = readObject(join(BLOBS_DIR, headCommitBlobID), Blob.class);
+            headBlobContent = new String(headBlob.getContent(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        String givenBlobContent = "";
+        if (givenCommitBlobID != null) {
+            Blob givenBlob = readObject(join(BLOBS_DIR, givenCommitBlobID), Blob.class);
+            givenBlobContent = new String(givenBlob.getContent(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        writeContents(conflictFile, "<<<<<<< HEAD\n", headBlobContent, "=======\n", givenBlobContent, ">>>>>>>\n");
     }
 
     /** get the split point commitID */
@@ -559,5 +570,4 @@ public class Repository {
         }
         return null;
     }
-
 }

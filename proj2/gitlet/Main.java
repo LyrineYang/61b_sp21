@@ -30,7 +30,7 @@ public class Main {
             System.out.println("Not in an initialized Gitlet directory.");
             System.exit(0);
         }
-        switch(firstArg) {
+        switch (firstArg) {
             case "init":
                 argsCheck(args, 1);
                 Repository.init();
@@ -75,7 +75,7 @@ public class Main {
                 Repository.rmBranch(args[1]);
                 break;
             case "reset":
-                argsCheck(args,2);
+                argsCheck(args, 2);
                 Repository.reset(args[1]);
                 break;
             case "merge":

@@ -212,7 +212,7 @@ public class Repository {
         System.out.println("===");
         System.out.println("commit " + commitID);
         if (currentCommit.secondParentID != null) {
-            System.out.println("Merge " + currentCommit.parentID.substring(0, 7) + " " + currentCommit.secondParentID.substring(0, 7));
+            System.out.println("Merge: " + currentCommit.parentID.substring(0, 7) + " " + currentCommit.secondParentID.substring(0, 7));
         }
         System.out.println("Date: " + currentCommit.timeStamp);
         System.out.println(currentCommit.commitMessage);

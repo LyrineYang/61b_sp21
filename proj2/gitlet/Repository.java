@@ -223,8 +223,9 @@ public class Repository {
         System.out.println("===");
         System.out.println("commit " + commitID);
         if (currentCommit.secondParentID != null) {
-            String mergeMessage = "Merge: " + currentCommit.parentID.substring(0, 7) + " " + currentCommit.secondParentID.substring(0, 7);
-            System.out.println(mergeMessage);
+            String parentID = currentCommit.parentID.substring(0, 7);
+            String secondParentID = currentCommit.secondParentID.substring(0, 7);
+            System.out.println("Merge: " + parentID + " " + secondParentID);
         }
         System.out.println("Date: " + currentCommit.timeStamp);
         System.out.println(currentCommit.commitMessage);
@@ -511,15 +512,18 @@ public class Repository {
                 checkOutFile(fileName, gID);
                 stagingArea.put(fileName, gID);
             } else if (sIDExist && hIDExist && gIDExist && !sID.equals(hID) && sID.equals(gID)) {
-            } else if (Objects.equals(hID, gID)) {
-            } else if (!sIDExist && !gIDExist && hIDExist) {
+                continue;
+            } else if ((!sIDExist && !gIDExist && hIDExist) || Objects.equals(hID, gID)) {
+                continue;
             } else if (!sIDExist && gIDExist && !hIDExist) {
                 checkOutFile(fileName, gID);
                 stagingArea.put(fileName, gID);
             } else if (sIDExist && !gIDExist && Objects.equals(sID, hID)) {
-                remove(fileName);
+                File deleteFile = join(CWD, fileName);
+                restrictedDelete(deleteFile);
                 stagingArea.put(fileName, DELETE_MARKER);
             } else if (sIDExist && !hIDExist && Objects.equals(sID, gID)) {
+                continue;
             } else {
                 conflictFiles.add(fileName);
             }

@@ -527,15 +527,15 @@ public class Repository {
             if ((sIDExist && hIDExist && gIDExist && sID.equals(hID) && !sID.equals(gID))
                     || !sIDExist && gIDExist && !hIDExist) {
                 mergeCheck(fileName, gID, stagingArea);
-            } else if (sIDExist && hIDExist && !gIDExist && Objects.equals(sID, hID)) {
-                mergeDelete(fileName, stagingArea);
             } else if (sIDExist && hIDExist && gIDExist
                     && !sID.equals(hID) && sID.equals(gID)) {
                 continue;
             } else if ((!sIDExist && !gIDExist && hIDExist) || Objects.equals(hID, gID)
                     || (sIDExist && !hIDExist && Objects.equals(sID, gID))) {
                 continue;
-            } else {
+            } else if (hIDExist && !gIDExist) {
+                mergeDelete(fileName, stagingArea);
+            }else {
                 conflictFiles.add(fileName);
             }
         }

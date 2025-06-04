@@ -1,6 +1,5 @@
 package gitlet;
 
-
 import static gitlet.Utils.*;
 import java.io.File;
 import java.io.IOException;
@@ -28,12 +27,6 @@ import java.util.*;
  */
 public class Repository {
     /**
-     * List all instance variables of the Repository class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided two examples for you.
-     */
-
-    /**
      * The current working directory.
      */
     public static final File CWD = new File(System.getProperty("user.dir"));
@@ -41,6 +34,11 @@ public class Repository {
      * The .gitlet directory.
      */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
+    /**
+     * List all instance variables of the Repository class here with a useful
+     * comment above them describing what that variable represents and how that
+     * variable is used. We've provided two examples for you.
+     */
     private static final File OBJECTS_DIR = join(GITLET_DIR, "objects");
     private static final File COMMITS_DIR = join(OBJECTS_DIR, "commits");
     private static final File BLOBS_DIR = join(OBJECTS_DIR, "blobs");
@@ -634,50 +632,45 @@ public class Repository {
     private static String getSplitPointID(String givenBranchHeadCommitID, String headCommitID) {
         Set<String> allParentCommitID = new HashSet<>(getAllParent(headCommitID));
         allParentCommitID.retainAll(getAllParent(givenBranchHeadCommitID));
-        String latestCommitID = null;
-        String latestTimestamp = null;
-        List<String> lcaCandidates = new ArrayList<>();
-        for (String ca1 : allParentCommitID) {
-            boolean isLCA = true;
-            for (String ca2 : allParentCommitID) {
-                if (ca1.equals(ca2)) {
+        return getCommonAncestorID(allParentCommitID);
+    }
+    private static String getCommonAncestorID(Set<String> allParentCommitID) {
+        for (String splitPointID: allParentCommitID) {
+            boolean isOtherParent = false;
+            for (String parentCommitID: allParentCommitID) {
+                if (parentCommitID.equals(splitPointID)) {
                     continue;
                 }
-                Set<String> ancestorsOfCa2 = getAllParent(ca2);
-                ancestorsOfCa2.remove(ca2);
-                if (ancestorsOfCa2.contains(ca1)) {
-                    isLCA = false;
+                Set<String> strictAncestor = getAllParent(parentCommitID);
+                strictAncestor.remove(parentCommitID);
+                if (strictAncestor.contains(splitPointID)) {
+                    isOtherParent = true;
                     break;
                 }
             }
-            if (isLCA) {
-                lcaCandidates.add(ca1);
+            if (!isOtherParent) {
+                return splitPointID;
             }
         }
-        return lcaCandidates.get(0);
-
+        return null;
     }
     private static Set<String> getAllParent(String givenHeadCommitID) {
         Set<String> visited = new HashSet<>();
-        Set<String> allParentSet = new HashSet<>();
-        dfsGetAllParent(givenHeadCommitID, visited, allParentSet);
-        return allParentSet;
+        dfsGetAllParent(givenHeadCommitID, visited);
+        return visited;
     }
-    private static void dfsGetAllParent(String givenCommitID,
-                                        Set<String> visited,
-                                        Set<String> allParentSet) {
+    private static void dfsGetAllParent(String givenCommitID, Set<String> visited) {
         if (givenCommitID == null || visited.contains(givenCommitID)) {
             return;
         }
         visited.add(givenCommitID);
-        allParentSet.add(givenCommitID);
         Commit givenCommit = getCommitByID(givenCommitID);
         if (givenCommit == null) {
             System.exit(0);
         }
-        dfsGetAllParent(givenCommit.getParentID(), visited, allParentSet);
+        dfsGetAllParent(givenCommit.getParentID(), visited);
         if (givenCommit.getSecondParentID() != null) {
-            dfsGetAllParent(givenCommit.getSecondParentID(), visited, allParentSet);
+            dfsGetAllParent(givenCommit.getSecondParentID(), visited);
         }
     }
 }
